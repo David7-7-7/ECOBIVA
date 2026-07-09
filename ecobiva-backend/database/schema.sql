@@ -137,3 +137,91 @@ INSERT INTO Empleado (nombre, documento, fechaIngreso, cargoActual, tarifaHora, 
 -- Nota: el Usuario admin de prueba y su UsuarioRol se insertan desde
 -- Node (seed.js), porque el passwordHash debe generarse con bcrypt,
 -- no puede ir en texto plano ni un hash fijo en SQL.
+
+-- ============================================================
+-- ECOBIVA - Parte 1
+-- Script CORREGIDO tras comparar contra CodigoActual.sql real.
+-- Ejecutar en DBeaver con "File -> Open File" (no copiar/pegar)
+--
+-- NOTA: LogAuditoria y Permiso YA existen en tu BD con la forma correcta
+-- (fechaHora, ipOrigen, idUsuario nullable; Permiso con modulo/accion).
+-- Este script NO las toca. Solo falta la tabla intermedia RolPermiso.
+-- ============================================================
+
+-- --------------------------------------------------------
+-- 1. Matriz Rol <-> Permiso (many-to-many) — única tabla que falta
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS RolPermiso (
+    idRol         INT NOT NULL,
+    idPermiso     INT NOT NULL,
+    permitido     BOOLEAN NOT NULL DEFAULT TRUE,
+    PRIMARY KEY (idRol, idPermiso),
+    FOREIGN KEY (idRol) REFERENCES Rol(idRol) ON DELETE CASCADE,
+    FOREIGN KEY (idPermiso) REFERENCES Permiso(idPermiso) ON DELETE CASCADE
+);
+
+-- --------------------------------------------------------
+-- 2. (Opcional / verificación) Catálogo de permisos.
+--    Tu tabla Permiso ya tiene 16 filas (AUTO_INCREMENT=17), que coinciden
+--    con este catálogo. Este INSERT IGNORE es solo un seguro por si falta
+--    alguno; no duplica nada gracias a la UNIQUE KEY (modulo, accion).
+-- --------------------------------------------------------
+INSERT IGNORE INTO Permiso (modulo, accion, descripcion) VALUES
+('usuarios',   'crear',    'Crear usuarios del sistema'),
+('usuarios',   'leer',     'Consultar usuarios'),
+('usuarios',   'editar',   'Editar usuarios'),
+('usuarios',   'eliminar', 'Desactivar usuarios'),
+('roles',      'leer',     'Consultar roles'),
+('permisos',   'leer',     'Ver matriz de permisos'),
+('permisos',   'editar',   'Editar matriz de permisos'),
+('auditoria',  'leer',     'Consultar log de auditoría'),
+('auditoria',  'exportar', 'Exportar log de auditoría'),
+('ordenes',    'crear',    'Crear órdenes de servicio'),
+('ordenes',    'leer',     'Consultar órdenes de servicio'),
+('ordenes',    'editar',   'Editar órdenes de servicio'),
+('diagnostico','crear',    'Registrar diagnósticos'),
+('diagnostico','editar',   'Editar diagnósticos y reparaciones'),
+('inventario', 'leer',     'Consultar inventario/kardex'),
+('inventario', 'editar',   'Editar movimientos de inventario');
+
+-- --------------------------------------------------------
+-- 3. Seed: asignación inicial de permisos por rol.
+--    Usamos subconsultas por `nombreRol` en vez de ids fijos, porque no
+--    sabemos con certeza si Admin/Tecnico/Asesor son 1/2/3 en tu tabla Rol.
+--    AJUSTA los strings 'Admin', 'Tecnico', 'Asesor' si en tu tabla Rol
+--    los nombres están escritos distinto (ej. con tilde, mayúsculas, etc).
+-- --------------------------------------------------------
+
+-- Verifica primero cómo están escritos tus roles:
+-- SELECT idRol, nombreRol FROM Rol;
+
+-- Admin: acceso total a todo el catálogo
+INSERT IGNORE INTO RolPermiso (idRol, idPermiso, permitido)
+SELECT (SELECT idRol FROM Rol WHERE nombreRol = 'Admin'), idPermiso, TRUE
+FROM Permiso
+WHERE (SELECT idRol FROM Rol WHERE nombreRol = 'Admin') IS NOT NULL;
+
+-- Tecnico: diagnóstico/reparación + lectura de órdenes e inventario
+INSERT IGNORE INTO RolPermiso (idRol, idPermiso, permitido)
+SELECT (SELECT idRol FROM Rol WHERE nombreRol = 'Tecnico'), idPermiso, TRUE
+FROM Permiso
+WHERE ((modulo = 'diagnostico')
+    OR (modulo = 'ordenes' AND accion = 'leer')
+    OR (modulo = 'inventario'))
+  AND (SELECT idRol FROM Rol WHERE nombreRol = 'Tecnico') IS NOT NULL;
+
+-- Asesor: atención al cliente y órdenes de servicio
+INSERT IGNORE INTO RolPermiso (idRol, idPermiso, permitido)
+SELECT (SELECT idRol FROM Rol WHERE nombreRol = 'Asesor'), idPermiso, TRUE
+FROM Permiso
+WHERE (modulo = 'ordenes' OR (modulo = 'inventario' AND accion = 'leer'))
+  AND (SELECT idRol FROM Rol WHERE nombreRol = 'Asesor') IS NOT NULL;
+
+-- --------------------------------------------------------
+-- 4. Verificación final: ver la matriz recién creada
+-- --------------------------------------------------------
+-- SELECT r.nombreRol, p.modulo, p.accion, rp.permitido
+-- FROM RolPermiso rp
+-- JOIN Rol r ON r.idRol = rp.idRol
+-- JOIN Permiso p ON p.idPermiso = rp.idPermiso
+-- ORDER BY r.nombreRol, p.modulo, p.accion;
