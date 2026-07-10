@@ -1,0 +1,27 @@
+.dataField{
+
+display:flex;
+
+flex-direction:column;
+
+margin-bottom:18px;
+
+}
+
+.dataField span{
+
+font-size:13px;
+
+color:#64748b;
+
+margin-bottom:5px;
+
+}
+
+.dataField strong{
+
+font-size:15px;
+
+color:#1e293b;
+
+}

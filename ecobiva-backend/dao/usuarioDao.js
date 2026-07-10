@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 
+
 /**
  * Busca un usuario por correo, junto con sus roles ACTIVOS
  * (aquellos en UsuarioRol donde fechaFin sigue en NULL).
@@ -136,6 +137,19 @@ async function asignarRolInicial(idUsuario, idRol, asignadoPor, conn = pool) {
   );
 }
 
+async function obtenerPermisosPorUsuario(idUsuario) {
+  const query = `
+    SELECT p.modulo, p.accion 
+    FROM UsuarioRol ur
+    INNER JOIN RolPermiso rp ON ur.idRol = rp.idRol
+    INNER JOIN Permiso p ON rp.idPermiso = p.idPermiso
+    WHERE ur.idUsuario = ? AND rp.permitido = 1
+  `;
+  
+  const [rows] = await pool.query(query, [idUsuario]);
+  return rows; // Retorna un arreglo como: [{ modulo: 'VEHICULOS', accion: 'LEER' }, ...]
+}
+
 module.exports = {
   obtenerPorCorreo,
   obtenerPorId,
@@ -147,5 +161,6 @@ module.exports = {
   actualizarPasswordHash,
   actualizarUltimoAcceso,
   cambiarRol,
-  asignarRolInicial
+  asignarRolInicial, 
+  obtenerPermisosPorUsuario
 };

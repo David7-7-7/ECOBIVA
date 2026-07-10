@@ -1,0 +1,33 @@
+.MainLayout{
+
+display:flex;
+
+background:#f5f7fb;
+
+min-height:100vh;
+
+}
+
+.layoutBody{
+
+margin-left:260px;
+
+width:calc(100% - 260px);
+
+transition:.35s;
+
+}
+
+.layoutBody.expand{
+
+margin-left:80px;
+
+width:calc(100% - 80px);
+
+}
+
+main{
+
+padding:30px;
+
+}

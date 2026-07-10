@@ -17,5 +17,6 @@ router.post('/preguntas-seguridad', verificarToken, recuperacionController.confi
 router.get('/preguntas-seguridad', recuperacionController.obtenerPreguntasDeUsuario);
 router.post('/validar-preguntas', recuperacionController.validarPreguntas);
 router.put('/reset-password/:token', recuperacionController.resetPassword);
+router.get('/me', verificarToken, authController.obtenerPerfil);
 
 module.exports = router;

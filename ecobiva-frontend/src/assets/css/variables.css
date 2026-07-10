@@ -1,0 +1,32 @@
+:root{
+
+    --primary:#1E3A8A;
+    --primary-hover:#2748aa;
+
+    --secondary:#2563EB;
+
+    --success:#10B981;
+
+    --danger:#EF4444;
+
+    --warning:#F59E0B;
+
+    --background:#F4F7FC;
+
+    --card:#FFFFFF;
+
+    --text:#1F2937;
+
+    --gray:#6B7280;
+
+    --border:#E5E7EB;
+
+    --sidebar:#0F172A;
+
+    --navbar:#FFFFFF;
+
+    --radius:12px;
+
+    --shadow:0px 10px 20px rgba(0,0,0,.08);
+
+}

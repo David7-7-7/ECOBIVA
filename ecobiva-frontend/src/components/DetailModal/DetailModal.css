@@ -1,0 +1,105 @@
+.detailOverlay {
+
+    position: fixed;
+
+    top: 0;
+
+    left: 0;
+
+    width: 100%;
+
+    height: 100%;
+
+    background: rgba(0, 0, 0, .45);
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    z-index: 6000;
+
+}
+
+.detailModal {
+
+    width: 900px;
+
+    max-width: 95%;
+
+    max-height: 90vh;
+
+    overflow: auto;
+
+    background: white;
+
+    border-radius: 18px;
+
+    box-shadow: 0 15px 45px rgba(0, 0, 0, .2);
+
+    animation: fadeDetail .25s;
+
+}
+
+@keyframes fadeDetail {
+
+    from {
+
+        opacity: 0;
+
+        transform: translateY(-20px);
+
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform: translateY(0);
+
+    }
+
+}
+
+.detailHeader {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding: 20px 25px;
+
+    border-bottom: 1px solid #eee;
+
+}
+
+.detailHeader h2 {
+
+    margin: 0;
+
+    color: #1e293b;
+
+}
+
+.detailHeader button {
+
+    border: none;
+
+    background: none;
+
+    font-size: 22px;
+
+    cursor: pointer;
+
+    color: #64748b;
+
+}
+
+.detailBody {
+
+    padding: 25px;
+
+}

@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
-import Layout from './components/Layout.jsx';
+import MainLayout from './layouts/MainLayout.jsx';
 
 import Login from './pages/Login.jsx';
 import Recuperacion from './pages/Recuperacion.jsx';
@@ -18,32 +18,32 @@ export default function App() {
 
       <Route path="/dashboard" element={
         <ProtectedRoute>
-          <Layout><Dashboard /></Layout>
+          <MainLayout><Dashboard /></MainLayout>
         </ProtectedRoute>
       } />
 
       <Route path="/perfil" element={
         <ProtectedRoute>
-          <Layout><CambiarPassword /></Layout>
+          <MainLayout><CambiarPassword /></MainLayout>
         </ProtectedRoute>
       } />
 
       {/* Solo Admin */}
       <Route path="/usuarios" element={
         <ProtectedRoute rolesPermitidos={['Admin']}>
-          <Layout><Usuarios /></Layout>
+          <MainLayout><Usuarios /></MainLayout>
         </ProtectedRoute>
       } />
 
       <Route path="/permisos" element={
         <ProtectedRoute rolesPermitidos={['Admin']}>
-          <Layout><Permisos /></Layout>
+          <MainLayout><Permisos /></MainLayout>
         </ProtectedRoute>
       } />
 
       <Route path="/auditoria" element={
         <ProtectedRoute rolesPermitidos={['Admin']}>
-          <Layout><Auditoria /></Layout>
+          <MainLayout><Auditoria /></MainLayout>
         </ProtectedRoute>
       } />
 
