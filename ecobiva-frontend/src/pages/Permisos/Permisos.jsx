@@ -1,25 +1,29 @@
-import { useEffect, useMemo, useState } from 'react';
-import { permisosApi } from '../api/api';
+import { useEffect, useMemo, useState } from "react";
+import { permisosApi } from "../../api/api";
 
 export default function Permisos() {
   const [filas, setFilas] = useState([]); // filas planas del backend
   const [cambios, setCambios] = useState({}); // clave `${idRol}-${idPermiso}` -> permitido
-  const [error, setError] = useState('');
-  const [mensaje, setMensaje] = useState('');
+  const [error, setError] = useState("");
+  const [mensaje, setMensaje] = useState("");
   const [guardando, setGuardando] = useState(false);
 
   async function cargar() {
-    setError('');
+    setError("");
     try {
       const { data } = await permisosApi.matriz();
       setFilas(data);
       setCambios({});
     } catch (err) {
-      setError(err.response?.data?.error || 'No se pudo cargar la matriz de permisos');
+      setError(
+        err.response?.data?.error || "No se pudo cargar la matriz de permisos",
+      );
     }
   }
 
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => {
+    cargar();
+  }, []);
 
   // Reorganiza las filas planas en: { modulo-accion: { idPermiso, roles: { idRol: permitido } } }
   const { permisosUnicos, rolesUnicos, tabla } = useMemo(() => {
@@ -28,17 +32,27 @@ export default function Permisos() {
     const tablaMap = new Map();
 
     for (const fila of filas) {
-      permisosMap.set(fila.idPermiso, { idPermiso: fila.idPermiso, modulo: fila.modulo, accion: fila.accion });
-      rolesMap.set(fila.idRol, { idRol: fila.idRol, nombreRol: fila.nombreRol });
+      permisosMap.set(fila.idPermiso, {
+        idPermiso: fila.idPermiso,
+        modulo: fila.modulo,
+        accion: fila.accion,
+      });
+      rolesMap.set(fila.idRol, {
+        idRol: fila.idRol,
+        nombreRol: fila.nombreRol,
+      });
 
       const clave = `${fila.idRol}-${fila.idPermiso}`;
       tablaMap.set(clave, fila.permitido === 1 || fila.permitido === true);
     }
 
     return {
-      permisosUnicos: [...permisosMap.values()].sort((a, b) => a.modulo.localeCompare(b.modulo) || a.accion.localeCompare(b.accion)),
+      permisosUnicos: [...permisosMap.values()].sort(
+        (a, b) =>
+          a.modulo.localeCompare(b.modulo) || a.accion.localeCompare(b.accion),
+      ),
       rolesUnicos: [...rolesMap.values()].sort((a, b) => a.idRol - b.idRol),
-      tabla: tablaMap
+      tabla: tablaMap,
     };
   }, [filas]);
 
@@ -54,16 +68,16 @@ export default function Permisos() {
 
   async function guardarCambios() {
     setGuardando(true);
-    setError('');
-    setMensaje('');
+    setError("");
+    setMensaje("");
     try {
       const payload = Object.entries(cambios).map(([clave, permitido]) => {
-        const [idRol, idPermiso] = clave.split('-').map(Number);
+        const [idRol, idPermiso] = clave.split("-").map(Number);
         return { idRol, idPermiso, permitido };
       });
 
       if (payload.length === 0) {
-        setMensaje('No hay cambios por guardar');
+        setMensaje("No hay cambios por guardar");
         return;
       }
 
@@ -71,7 +85,9 @@ export default function Permisos() {
       setMensaje(`${payload.length} permiso(s) actualizados`);
       cargar();
     } catch (err) {
-      setError(err.response?.data?.error || 'No se pudieron guardar los cambios');
+      setError(
+        err.response?.data?.error || "No se pudieron guardar los cambios",
+      );
     } finally {
       setGuardando(false);
     }
@@ -88,14 +104,16 @@ export default function Permisos() {
       {mensaje && <div className="alert alert-success">{mensaje}</div>}
 
       <div className="card">
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: "auto" }}>
           <table>
             <thead>
               <tr>
-                <th>Módulo</th>
+                <th>Móduulo</th>
                 <th>Acción</th>
                 {rolesUnicos.map((r) => (
-                  <th key={r.idRol} style={{ textAlign: 'center' }}>{r.nombreRol}</th>
+                  <th key={r.idRol} style={{ textAlign: "center" }}>
+                    {r.nombreRol}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -105,7 +123,7 @@ export default function Permisos() {
                   <td>{p.modulo}</td>
                   <td>{p.accion}</td>
                   {rolesUnicos.map((r) => (
-                    <td key={r.idRol} style={{ textAlign: 'center' }}>
+                    <td key={r.idRol} style={{ textAlign: "center" }}>
                       <input
                         type="checkbox"
                         checked={valorActual(r.idRol, p.idPermiso)}
@@ -119,11 +137,19 @@ export default function Permisos() {
           </table>
         </div>
 
-        <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-          <button className="btn btn-primary" onClick={guardarCambios} disabled={guardando}>
-            {guardando ? 'Guardando...' : `Guardar cambios (${Object.keys(cambios).length})`}
+        <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+          <button
+            className="btn btn-primary"
+            onClick={guardarCambios}
+            disabled={guardando}
+          >
+            {guardando
+              ? "Guardando..."
+              : `Guardar cambios (${Object.keys(cambios).length})`}
           </button>
-          <button className="btn btn-secondary" onClick={cargar}>Descartar</button>
+          <button className="btn btn-secondary" onClick={cargar}>
+            Descartar
+          </button>
         </div>
       </div>
     </div>

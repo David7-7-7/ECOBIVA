@@ -1,71 +1,36 @@
 import "./Input.css";
 
 export default function Input({
+  label,
 
-label,
+  placeholder,
 
-placeholder,
+  type = "text",
 
-type="text",
+  required = false,
 
-required=false,
+  value,
 
-value,
+  onChange,
 
-onChange,
+  error,
+}) {
+  return (
+    <div className="inputGroup">
+      <label>
+        {label}
 
-error
+        {required && <span>*</span>}
+      </label>
 
-}){
+      <input
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+      />
 
-return(
-
-<div className="inputGroup">
-
-<label>
-
-{label}
-
-{
-
-required &&
-
-<span>
-
- *
-
-</span>
-
-}
-
-</label>
-
-<input
-
-type={type}
-
-placeholder={placeholder}
-
-value={value}
-
-onChange={onChange}
-
-/>
-
-{
-
-error &&
-
-<p className="inputError">
-
-{error}
-
-</p>
-
-}
-
-</div>
-
-)
-
+      {error && <p className="inputError">{error}</p>}
+    </div>
+  );
 }

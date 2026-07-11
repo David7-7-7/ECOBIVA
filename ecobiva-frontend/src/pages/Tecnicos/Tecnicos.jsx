@@ -56,7 +56,7 @@ export default function Tecnicos() {
     ];
     return (
 
-        <MainLayout>
+        <>
 
             <PageHeader
 
@@ -195,7 +195,7 @@ export default function Tecnicos() {
             />
 
 
-        </MainLayout>
+        </>
 
     )
 

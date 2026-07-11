@@ -1,0 +1,45 @@
+.usuarioForm{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:18px;
+
+}
+
+.usuarioForm select{
+
+    width:100%;
+
+    padding:13px;
+
+    border:1px solid #dbe2ea;
+
+    border-radius:10px;
+
+    font-size:14px;
+
+    outline:none;
+
+}
+
+.usuarioForm select:focus{
+
+    border-color:#2563eb;
+
+    box-shadow:0 0 0 3px rgba(37,99,235,.15);
+
+}
+
+.usuarioButtons{
+
+    display:flex;
+
+    justify-content:flex-end;
+
+    gap:12px;
+
+    margin-top:10px;
+
+}

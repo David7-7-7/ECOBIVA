@@ -1,37 +1,22 @@
 import "./SearchBar.css";
-
 import { FaSearch } from "react-icons/fa";
 
 export default function SearchBar({
+  value,
+  onChange,
+  placeholder = "Buscar...",
+  width = "300px",
+}) {
+  return (
+    <div className="searchBar" style={{ maxWidth: width }}>
+      <FaSearch className="searchIcon" />
 
-    placeholder,
-
-    value,
-
-    onChange
-
-}){
-
-    return(
-
-        <div className="searchBar">
-
-            <FaSearch className="searchIcon"/>
-
-            <input
-
-                type="text"
-
-                placeholder={placeholder}
-
-                value={value}
-
-                onChange={onChange}
-
-            />
-
-        </div>
-
-    )
-
+      <input
+        type="text"
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+      />
+    </div>
+  );
 }

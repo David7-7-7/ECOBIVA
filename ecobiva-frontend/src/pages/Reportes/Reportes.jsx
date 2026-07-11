@@ -28,7 +28,7 @@ export default function Reportes() {
 
     return (
 
-        <MainLayout>
+        <>
 
             <PageHeader
 
@@ -198,7 +198,7 @@ export default function Reportes() {
 
             </div>
 
-        </MainLayout>
+        </>
 
     )
 

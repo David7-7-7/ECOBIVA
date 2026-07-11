@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const api = axios.create({ baseURL: '/api' });
+const api = axios.create({
+  baseURL: "http://localhost:3000/api",
+});
 
 // Adjunta el token JWT guardado en localStorage a cada request
 api.interceptors.request.use((config) => {

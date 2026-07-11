@@ -1,33 +1,15 @@
 import "./Card.css";
 
 export default function Card({
+  title,
 
-title,
+  children,
+}) {
+  return (
+    <div className="card">
+      {title && <h2>{title}</h2>}
 
-children
-
-}){
-
-return(
-
-<div className="card">
-
-{
-
-title &&
-
-<h2>
-
-{title}
-
-</h2>
-
-}
-
-{children}
-
-</div>
-
-)
-
+      {children}
+    </div>
+  );
 }

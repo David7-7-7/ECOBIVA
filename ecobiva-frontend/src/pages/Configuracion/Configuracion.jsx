@@ -14,7 +14,7 @@ export default function Configuracion() {
 
     return (
 
-        <MainLayout>
+        <>
 
             <PageHeader
 
@@ -184,7 +184,7 @@ export default function Configuracion() {
 
             </div>
 
-        </MainLayout>
+        </>
 
     )
 

@@ -1,39 +1,27 @@
 import "./PageHeader.css";
 
 export default function PageHeader({
+  title,
 
-    title,
+  subtitle,
 
-    subtitle,
+  button,
 
-    button,
+  actions,
+}) {
+  return (
+    <div className="pageHeader">
+      <div>
+        <h1>{title}</h1>
 
-    actions
+        <p>{subtitle}</p>
+      </div>
 
-}){
+      <div className="pageHeaderActions">
+        {actions}
 
-    return(
-
-        <div className="pageHeader">
-
-            <div>
-
-                <h1>{title}</h1>
-
-                <p>{subtitle}</p>
-
-            </div>
-
-            <div className="pageHeaderActions">
-
-                {actions}
-
-                {button}
-
-            </div>
-
-        </div>
-
-    )
-
+        {button}
+      </div>
+    </div>
+  );
 }

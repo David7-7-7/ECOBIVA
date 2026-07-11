@@ -1,0 +1,75 @@
+.tableContainer{
+
+    width:100%;
+
+    overflow-x:auto;
+
+}
+
+.dataTable{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+    background:white;
+
+}
+
+.dataTable thead{
+
+    background:#eff6ff;
+
+}
+
+.dataTable th{
+
+    padding:16px;
+
+    text-align:left;
+
+    color:#1e3a8a;
+
+    font-weight:700;
+
+    font-size:14px;
+
+    border-bottom:2px solid #dbeafe;
+
+}
+
+.dataTable td{
+
+    padding:15px;
+
+    border-bottom:1px solid #e5e7eb;
+
+    color:#334155;
+
+    font-size:14px;
+
+}
+
+.dataTable tbody tr{
+
+    transition:.2s;
+
+}
+
+.dataTable tbody tr:hover{
+
+    background:#f8fafc;
+
+}
+
+.emptyTable{
+
+    text-align:center;
+
+    padding:50px !important;
+
+    color:#94a3b8;
+
+    font-style:italic;
+
+}

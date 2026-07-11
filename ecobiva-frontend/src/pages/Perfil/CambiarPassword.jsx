@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { perfilApi } from '../api/api';
+import { perfilApi } from "../../api/api";
 
 export default function CambiarPassword() {
   const [passwordActual, setPasswordActual] = useState('');

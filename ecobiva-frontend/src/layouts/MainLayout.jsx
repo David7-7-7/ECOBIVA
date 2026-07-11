@@ -1,11 +1,13 @@
 import "./MainLayout.css";
 
+import { Outlet } from "react-router-dom";
+
 import Navbar from "../components/Navbar/Navbar";
 import Sidebar from "../components/Sidebar/Sidebar";
 
 import { useLayout } from "../context/LayoutContext";
 
-export default function MainLayout({ children }) {
+export default function MainLayout() {
 
     const { sidebarOpen } = useLayout();
 
@@ -27,7 +29,7 @@ export default function MainLayout({ children }) {
 
                 <main>
 
-                    {children}
+                    <Outlet />
 
                 </main>
 
@@ -36,29 +38,5 @@ export default function MainLayout({ children }) {
         </div>
 
     );
-
-
-    return (
-
-        <MainLayout>
-
-            {/* Todo tu contenido */}
-
-            <ClienteModal
-                open={abrirModal}
-                onClose={() => setAbrirModal(false)}
-            />
-
-
-            <VehiculoModal
-                open={abrirModal}
-                onClose={() => setAbrirModal(false)}
-            />
-
-        </MainLayout>
-
-    );
-
-
 
 }

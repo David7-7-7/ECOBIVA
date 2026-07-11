@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { usuariosApi, rolesApi } from '../api/api';
+import { usuariosApi, rolesApi } from '../../api/api';
 
 const VACIO = { idUsuario: null, correo: '', password: '', idRol: '' };
 

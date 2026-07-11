@@ -1,0 +1,57 @@
+.emptyState{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:center;
+
+    padding:60px 30px;
+
+    text-align:center;
+
+}
+
+.emptyIcon{
+
+    width:90px;
+
+    height:90px;
+
+    border-radius:50%;
+
+    background:#eff6ff;
+
+    color:#2563eb;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    font-size:36px;
+
+    margin-bottom:20px;
+
+}
+
+.emptyState h2{
+
+    color:#1e3a8a;
+
+    margin-bottom:10px;
+
+}
+
+.emptyState p{
+
+    color:#64748b;
+
+    margin-bottom:25px;
+
+    max-width:380px;
+
+}

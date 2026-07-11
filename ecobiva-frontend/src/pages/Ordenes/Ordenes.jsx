@@ -66,7 +66,7 @@ export default function Ordenes() {
     ];
     return (
 
-        <MainLayout>
+        <>
 
             <PageHeader
 
@@ -228,7 +228,7 @@ export default function Ordenes() {
             />
 
 
-        </MainLayout>
+        </>
 
     )
 

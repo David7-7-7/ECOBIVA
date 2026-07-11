@@ -77,7 +77,7 @@ export default function Clientes() {
 
     return (
 
-        <MainLayout>
+        <>
 
             <PageHeader
 
@@ -235,7 +235,7 @@ export default function Clientes() {
             </DetailModal>
 
 
-        </MainLayout>
+        </>
 
     );
 

@@ -89,7 +89,7 @@ export default function Vehiculos() {
 
     return (
 
-        <MainLayout>
+        <>
 
             <PageHeader
                 title="Vehículos"
@@ -240,7 +240,7 @@ export default function Vehiculos() {
 
 />
 
-        </MainLayout>
+        </>
 
     );
 

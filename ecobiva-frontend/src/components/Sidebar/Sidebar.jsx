@@ -1,197 +1,158 @@
 import "./Sidebar.css";
 
 import {
-    FaHome,
-    FaUsers,
-    FaCar,
-    FaClipboardList,
-    FaWarehouse,
-    FaTools,
-    FaChartPie,
-    FaCog,
-    FaSignOutAlt,
-    FaBars
+  FaHome,
+  FaUsers,
+  FaCar,
+  FaClipboardList,
+  FaWarehouse,
+  FaTools,
+  FaChartPie,
+  FaCog,
+  FaUserShield,
+  FaKey,
+  FaHistory,
+  FaLock,
+  FaSignOutAlt,
+  FaBars,
 } from "react-icons/fa";
 
 import { Link, useLocation } from "react-router-dom";
 
 import { useLayout } from "../../context/LayoutContext";
+import { useAuth } from "../../context/AuthContext";
+
+const MENU = [
+  {
+    nombre: "Dashboard",
+    ruta: "/dashboard",
+    icono: <FaHome />,
+    roles: ["Admin", "Asesor", "Tecnico"],
+  },
+  {
+    nombre: "Clientes",
+    ruta: "/clientes",
+    icono: <FaUsers />,
+    roles: ["Admin", "Asesor"],
+  },
+  {
+    nombre: "Vehículos",
+    ruta: "/vehiculos",
+    icono: <FaCar />,
+    roles: ["Admin", "Asesor", "Tecnico"],
+  },
+  {
+    nombre: "Órdenes",
+    ruta: "/ordenes",
+    icono: <FaClipboardList />,
+    roles: ["Admin", "Asesor", "Tecnico"],
+  },
+  {
+    nombre: "Inventario",
+    ruta: "/inventario",
+    icono: <FaWarehouse />,
+    roles: ["Admin"],
+  },
+  {
+    nombre: "Técnicos",
+    ruta: "/tecnicos",
+    icono: <FaTools />,
+    roles: ["Admin"],
+  },
+  {
+    nombre: "Reportes",
+    ruta: "/reportes",
+    icono: <FaChartPie />,
+    roles: ["Admin"],
+  },
+  {
+    nombre: "Configuración",
+    ruta: "/configuracion",
+    icono: <FaCog />,
+    roles: ["Admin"],
+  },
+
+  // Seguridad
+  {
+    nombre: "Usuarios",
+    ruta: "/usuarios",
+    icono: <FaUserShield />,
+    roles: ["Admin"],
+  },
+  {
+    nombre: "Permisos",
+    ruta: "/permisos",
+    icono: <FaKey />,
+    roles: ["Admin"],
+  },
+  {
+    nombre: "Auditoría",
+    ruta: "/auditoria",
+    icono: <FaHistory />,
+    roles: ["Admin"],
+  },
+
+  {
+    nombre: "Mi contraseña",
+    ruta: "/perfil",
+    icono: <FaLock />,
+    roles: ["Admin", "Asesor", "Tecnico"],
+  },
+];
 
 export default function Sidebar() {
+  const location = useLocation();
 
-    const location = useLocation();
+  const { sidebarOpen, toggleSidebar } = useLayout();
 
-    const {
-        sidebarOpen,
-        toggleSidebar
-    } = useLayout();
+  const { usuario, nombresRoles, logout } = useAuth();
 
-    const menu = [
+  const menuVisible = MENU.filter((item) =>
+    item.roles.some((r) => nombresRoles.includes(r)),
+  );
 
-        {
-            nombre: "Dashboard",
-            ruta: "/dashboard",
-            icon: <FaHome />
-        },
+  return (
+    <aside className={sidebarOpen ? "sidebar" : "sidebar collapsed"}>
+      <div>
+        <div className="brand">
+          <div className="brand-logo">E</div>
 
-        {
-            nombre: "Clientes",
-            ruta: "/clientes",
-            icon: <FaUsers />
-        },
-
-        {
-            nombre: "Vehículos",
-            ruta: "/vehiculos",
-            icon: <FaCar />
-        },
-
-        {
-            nombre: "Órdenes",
-            ruta: "/ordenes",
-            icon: <FaClipboardList />
-        },
-
-        {
-            nombre: "Inventario",
-            ruta: "/inventario",
-            icon: <FaWarehouse />
-        },
-
-        {
-            nombre: "Técnicos",
-            ruta: "/tecnicos",
-            icon: <FaTools />
-        },
-
-        {
-            nombre: "Reportes",
-            ruta: "/reportes",
-            icon: <FaChartPie />
-        },
-
-        {
-            nombre: "Configuración",
-            ruta: "/configuracion",
-            icon: <FaCog />
-        }
-
-    ];
-
-    return (
-
-        <aside
-            className={
-                sidebarOpen
-                    ? "sidebar"
-                    : "sidebar collapsed"
-            }
-        >
-
+          {sidebarOpen && (
             <div>
+              <h2>ECOBIVA</h2>
 
-                <div className="brand">
+              <p>{usuario?.correo}</p>
 
-                    <div className="brand-logo">
-
-                        E
-
-                    </div>
-
-                    {
-
-                        sidebarOpen && (
-
-                            <>
-
-                                <h2>ECOBIVA</h2>
-
-                                <p>
-
-                                    Sistema de Gestión
-
-                                </p>
-
-                            </>
-
-                        )
-
-                    }
-
-                </div>
-
-                <div
-                    className="collapseButton"
-                    onClick={toggleSidebar}
-                >
-
-                    <FaBars />
-
-                </div>
-
-                <ul>
-
-                    {
-
-                        menu.map((item) => (
-
-                            <li
-                                key={item.ruta}
-                                className={
-                                    location.pathname === item.ruta
-                                        ? "active"
-                                        : ""
-                                }
-                            >
-
-                                <Link to={item.ruta}>
-
-                                    {item.icon}
-
-                                    {
-
-                                        sidebarOpen &&
-
-                                        <span>
-
-                                            {item.nombre}
-
-                                        </span>
-
-                                    }
-
-                                </Link>
-
-                            </li>
-
-                        ))
-
-                    }
-
-                </ul>
-
+              <small>{nombresRoles.join(" · ")}</small>
             </div>
+          )}
+        </div>
 
-            <button className="logoutButton">
+        <div className="collapseButton" onClick={toggleSidebar}>
+          <FaBars />
+        </div>
 
-                <FaSignOutAlt />
+        <ul>
+          {menuVisible.map((item) => (
+            <li
+              key={item.ruta}
+              className={location.pathname === item.ruta ? "active" : ""}
+            >
+              <Link to={item.ruta}>
+                {item.icono}
 
-                {
+                {sidebarOpen && <span>{item.nombre}</span>}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-                    sidebarOpen &&
+      <button className="logoutButton" onClick={logout}>
+        <FaSignOutAlt />
 
-                    <span>
-
-                        Cerrar sesión
-
-                    </span>
-
-                }
-
-            </button>
-
-        </aside>
-
-    );
-
+        {sidebarOpen && <span>Cerrar sesión</span>}
+      </button>
+    </aside>
+  );
 }
