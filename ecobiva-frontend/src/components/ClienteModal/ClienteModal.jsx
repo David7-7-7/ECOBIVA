@@ -1,6 +1,6 @@
 import "./ClienteModal.css";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Button from "../Button/Button";
 
@@ -10,7 +10,11 @@ export default function ClienteModal({
 
     open,
 
-    onClose
+    clienteEditar,
+
+    onClose,
+
+    onSave
 
 }){
 
@@ -24,44 +28,72 @@ export default function ClienteModal({
 
         telefono:"",
 
-        direccion:""
+        direccion:"",
+
+        preferenciaNotificacion:"Correo"
 
     });
 
     const [errores,setErrores]=useState({});
 
+    useEffect(() => {
+        if (!open) return;
+
+        if (clienteEditar) {
+            setCliente({
+                nombre: clienteEditar.nombre || "",
+                documento: clienteEditar.documento || "",
+                correo: clienteEditar.correo || "",
+                telefono: clienteEditar.telefono || "",
+                direccion: clienteEditar.direccion || "",
+                preferenciaNotificacion: clienteEditar.preferenciaNotificacion || "Correo"
+            });
+            setErrores({});
+            return;
+        }
+
+        setCliente({
+            nombre:"",
+            documento:"",
+            correo:"",
+            telefono:"",
+            direccion:"",
+            preferenciaNotificacion:"Correo"
+        });
+        setErrores({});
+    }, [open, clienteEditar]);
+
     if(!open) return null;
 
-    const validar=()=>{
+    const validar=async ()=>{
 
         let nuevo={};
 
-        if(cliente.nombre==="")
-
+        if(cliente.nombre.trim()==="")
             nuevo.nombre="Ingrese el nombre.";
 
-        if(cliente.documento==="")
-
+        if(cliente.documento.trim()==="")
             nuevo.documento="Ingrese el documento.";
 
-        if(cliente.telefono==="")
-
+        if(cliente.telefono.trim()==="")
             nuevo.telefono="Ingrese el teléfono.";
 
-        if(cliente.correo==="")
-
+        if(cliente.correo.trim()==="")
             nuevo.correo="Ingrese el correo.";
-
         else if(
-
             !/\S+@\S+\.\S+/.test(cliente.correo)
-
         )
-
             nuevo.correo="Correo inválido.";
 
         setErrores(nuevo);
 
+        if (Object.keys(nuevo).length > 0) return;
+
+        if (onSave) {
+            await onSave(cliente);
+        }
+
+        onClose();
     }
 
     return(
@@ -74,7 +106,7 @@ export default function ClienteModal({
 
                     <h2>
 
-                        Registrar Cliente
+                        {clienteEditar ? "Editar Cliente" : "Registrar Cliente"}
 
                     </h2>
 
@@ -196,6 +228,17 @@ export default function ClienteModal({
 
                         }
 
+                    />
+
+                    <Input
+                        label="Preferencia de notificación"
+                        value={cliente.preferenciaNotificacion}
+                        onChange={(e) =>
+                            setCliente({
+                                ...cliente,
+                                preferenciaNotificacion: e.target.value
+                            })
+                        }
                     />
 
                 </div>

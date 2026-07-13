@@ -2,9 +2,14 @@ import "./StatusBadge.css";
 
 export default function StatusBadge({ status }) {
 
-    const texto = status || "Sin estado";
+    const texto =
+        status === true || status === 1
+            ? "Activo"
+            : status === false || status === 0
+                ? "Inactivo"
+                : status ?? "Sin estado";
 
-    const normalize = texto.toLowerCase();
+    const normalize = String(texto).toLowerCase();
 
     let clase = "badgeDefault";
 

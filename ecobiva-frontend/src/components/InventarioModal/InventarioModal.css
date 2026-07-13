@@ -1,0 +1,15 @@
+.inventarioModalBody {
+  display: grid;
+  gap: 1rem;
+}
+
+.inventarioModalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.inventarioModalBody .inputGroup {
+  margin-bottom: 0.75rem;
+}

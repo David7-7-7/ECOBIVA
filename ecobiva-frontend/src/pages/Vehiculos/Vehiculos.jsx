@@ -1,91 +1,90 @@
 import "./Vehiculos.css";
 
-import MainLayout from "../../layouts/MainLayout";
-import { useState } from "react";
-
-import { FaPlus, FaSearch } from "react-icons/fa";
+import { useEffect, useState } from "react";
+import { FaPlus } from "react-icons/fa";
 
 import VehiculoModal from "../../components/VehiculoModal/VehiculoModal";
 import PageHeader from "../../components/PageHeader/PageHeader";
 import ActionButtons from "../../components/ActionButtons/ActionButtons";
-
 import StatusBadge from "../../components/StatusBadge/StatusBadge";
-
+import SearchBar from "../../components/SearchBar/SearchBar";
+import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
 import DetailModal from "../../components/DetailModal/DetailModal";
 import VehiculoDetail from "../../components/VehiculoDetail/VehiculoDetail";
 
-import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
+import {
+  obtenerVehiculos,
+  obtenerVehiculo,
+  crearVehiculo,
+  actualizarVehiculo,
+  eliminarVehiculo
+} from "../../services/vehiculoService";
 
 export default function Vehiculos() {
-
     const [abrirModal, setAbrirModal] = useState(false);
+    const [busqueda, setBusqueda] = useState("");
+    const [vehiculos, setVehiculos] = useState([]);
+    const [vehiculoEditar, setVehiculoEditar] = useState(null);
     const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState(null);
+    const [vehiculoEliminar, setVehiculoEliminar] = useState(null);
     const [detalleOpen, setDetalleOpen] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
 
-    const vehiculos = [
+    useEffect(() => {
+      cargarVehiculos();
+    }, []);
 
-        {
-            placa: "ABC123",
-            marca: "Mazda",
-            modelo: "CX-5",
-            color: "Rojo",
-            anio: 2022,
-            kilometraje: "42.300 km",
-            combustible: "Gasolina",
-            propietario: "Juan Pérez",
-            telefono: "3204567890",
-            ingreso: "03/07/2026",
-            salida: "05/07/2026",
-            estado: "En Taller"
-        },
+    const cargarVehiculos = async () => {
+      try {
+        const data = await obtenerVehiculos();
+        setVehiculos(data);
+      } catch (error) {
+        console.error(error);
+        alert("No se pudieron cargar los vehículos");
+      }
+    };
 
-        {
-            placa: "XYZ456",
-            marca: "Chevrolet",
-            modelo: "Onix",
-            color: "Blanco",
-            anio: 2021,
-            kilometraje: "31.200 km",
-            combustible: "Gasolina",
-            propietario: "María López",
-            telefono: "3119874561",
-            ingreso: "01/07/2026",
-            salida: "",
-            estado: "Activo"
-        },
-
-        {
-            placa: "JKL789",
-            marca: "Renault",
-            modelo: "Duster",
-            color: "Negro",
-            anio: 2020,
-            kilometraje: "81.100 km",
-            combustible: "Diésel",
-            propietario: "Carlos Ruiz",
-            telefono: "3157412589",
-            ingreso: "29/06/2026",
-            salida: "02/07/2026",
-            estado: "Finalizado"
-        },
-
-        {
-            placa: "QWE258",
-            marca: "Toyota",
-            modelo: "Corolla",
-            color: "Gris",
-            anio: 2023,
-            kilometraje: "11.400 km",
-            combustible: "Híbrido",
-            propietario: "Laura Gómez",
-            telefono: "3214569874",
-            ingreso: "04/07/2026",
-            salida: "",
-            estado: "Pendiente"
+    const guardarVehiculo = async (vehiculo) => {
+      try {
+        if (vehiculoEditar?.idVehiculo) {
+          await actualizarVehiculo(vehiculoEditar.idVehiculo, vehiculo);
+        } else {
+          await crearVehiculo(vehiculo);
         }
+        cerrarModal();
+        await cargarVehiculos();
+      } catch (error) {
+        console.error(error);
+        alert("No fue posible guardar el vehículo");
+      }
+    };
 
-    ];
+    const cerrarModal = () => {
+      setAbrirModal(false);
+      setVehiculoEditar(null);
+    };
+
+    const confirmarEliminarVehiculo = async () => {
+      try {
+        if (!vehiculoEliminar?.idVehiculo) {
+          throw new Error("No hay vehículo seleccionado");
+        }
+        await eliminarVehiculo(vehiculoEliminar.idVehiculo);
+        setConfirmDelete(false);
+        setVehiculoEliminar(null);
+        await cargarVehiculos();
+      } catch (error) {
+        console.error(error);
+        alert("No fue posible eliminar el vehículo");
+      }
+    };
+
+    const vehiculosFiltrados = vehiculos.filter((vehiculo) =>
+      vehiculo.placa?.toLowerCase().includes(busqueda.toLowerCase()) ||
+      vehiculo.marca?.toLowerCase().includes(busqueda.toLowerCase()) ||
+      vehiculo.modelo?.toLowerCase().includes(busqueda.toLowerCase()) ||
+      vehiculo.nombreCliente?.toLowerCase().includes(busqueda.toLowerCase())
+    );
 
     return (
 
@@ -97,7 +96,10 @@ export default function Vehiculos() {
                 button={
                     <button
                         className="btnNuevo"
-                        onClick={() => setAbrirModal(true)} >
+                        onClick={() => {
+                          setVehiculoEditar(null);
+                          setAbrirModal(true);
+                        }} >
 
                         <FaPlus />
                         Nuevo Vehículo
@@ -108,18 +110,13 @@ export default function Vehiculos() {
 
             <div className="vehiculosCard">
 
-                <div className="barraBusqueda">
+                <SearchBar
+          placeholder="Buscar vehículo..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
 
-                    <FaSearch />
-
-                    <input
-                        type="text"
-                        placeholder="Buscar vehículo..."
-                    />
-
-                </div>
-
-                <table>
+        <table>
 
                     <thead>
 
@@ -138,62 +135,37 @@ export default function Vehiculos() {
 
                     <tbody>
 
-                        {
-
-                            vehiculos.map((vehiculo, index) => (
-
-                                <tr key={index}>
-
-                                    <td>
-
-                                        <strong>
-
-                                            {vehiculo.placa}
-
-                                        </strong>
-
-                                    </td>
-
-                                    <td>{vehiculo.marca}</td>
-
-                                    <td>{vehiculo.modelo}</td>
-
-                                    <td>{vehiculo.propietario}</td>
-
-                                    <td>
-
-                                        <StatusBadge
-                                            status={vehiculo.estado}
-                                        />
-
-                                    </td>
-
-                                    <td>
-
-                                        <td>
-
-                                            <ActionButtons
-
-                                                onView={() => {
-                                                    setVehiculoSeleccionado(vehiculo);
-                                                    setDetalleOpen(true);
-                                                }}
-
-                                                onEdit={() => console.log("Editar", vehiculo)}
-
-                                                onDelete={() => setConfirmDelete(true)}
-
-                                            />
-
-                                        </td>
-
-                                    </td>
-
-                                </tr>
-
-                            ))
-
-                        }
+                        {vehiculosFiltrados.map((vehiculo) => (
+                            <tr key={vehiculo.idVehiculo || vehiculo.placa}>
+                                <td><strong>{vehiculo.placa}</strong></td>
+                                <td>{vehiculo.marca}</td>
+                                <td>{vehiculo.modelo}</td>
+                                <td>{vehiculo.nombreCliente || "-"}</td>
+                                <td><StatusBadge status={vehiculo.estado} /></td>
+                                <td>
+                                    <ActionButtons
+                                        onView={async () => {
+                                            try {
+                                              const detalle = await obtenerVehiculo(vehiculo.idVehiculo);
+                                              setVehiculoSeleccionado(detalle);
+                                              setDetalleOpen(true);
+                                            } catch (error) {
+                                              console.error(error);
+                                              alert("No fue posible obtener el vehículo");
+                                            }
+                                        }}
+                                        onEdit={() => {
+                                            setVehiculoEditar(vehiculo);
+                                            setAbrirModal(true);
+                                        }}
+                                        onDelete={() => {
+                                            setVehiculoEliminar(vehiculo);
+                                            setConfirmDelete(true);
+                                        }}
+                                    />
+                                </td>
+                            </tr>
+                        ))}
 
                     </tbody>
 
@@ -220,28 +192,22 @@ export default function Vehiculos() {
 
 </DetailModal>
 
-<ConfirmModal
+      <VehiculoModal
+        open={abrirModal}
+        vehiculoEditar={vehiculoEditar}
+        onClose={cerrarModal}
+        onSave={guardarVehiculo}
+      />
 
-    open={confirmDelete}
+      <ConfirmModal
+        open={confirmDelete}
+        title="Eliminar Vehículo"
+        message="¿Está seguro de eliminar este vehículo? Esta acción eliminará el registro permanentemente."
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={confirmarEliminarVehiculo}
+      />
 
-    title="Eliminar Vehículo"
+    </>
 
-    message="¿Está seguro de eliminar este vehículo? Esta acción es solamente visual."
-
-    onClose={() => setConfirmDelete(false)}
-
-    onConfirm={() => {
-
-        console.log("Eliminar vehículo");
-
-        setConfirmDelete(false);
-
-    }}
-
-/>
-
-        </>
-
-    );
-
+  );
 }

@@ -1,8 +1,7 @@
 import "./Clientes.css";
-import MainLayout from "../../layouts/MainLayout";
 
-import { useState } from "react";
-import { FaPlus, FaSearch } from "react-icons/fa";
+import { useEffect, useState } from "react";
+import { FaPlus } from "react-icons/fa";
 import ActionButtons from "../../components/ActionButtons/ActionButtons";
 import ClienteModal from "../../components/ClienteModal/ClienteModal";
 import PageHeader from "../../components/PageHeader/PageHeader";
@@ -12,231 +11,174 @@ import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
 
 import DetailModal from "../../components/DetailModal/DetailModal";
 import ClienteDetail from "../../components/ClienteDetail/ClienteDetail";
+import {
+  obtenerClientes,
+  obtenerCliente,
+  crearCliente,
+  actualizarCliente,
+  eliminarCliente
+} from "../../services/clienteService";
 
 export default function Clientes() {
+  const [abrirModal, setAbrirModal] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [clientes, setClientes] = useState([]);
+  const [clienteEditar, setClienteEditar] = useState(null);
+  const [detalleOpen, setDetalleOpen] = useState(false);
+  const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
 
-    const [abrirModal, setAbrirModal] = useState(false);
-    const [busqueda, setBusqueda] = useState("");
-    const [confirmDelete, setConfirmDelete] = useState(false);
+  useEffect(() => {
+    cargarClientes();
+  }, []);
 
-    const [detalleOpen, setDetalleOpen] = useState(false);
-    const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
+  const cargarClientes = async () => {
+    try {
+      const data = await obtenerClientes();
+      setClientes(data);
+    } catch (error) {
+      console.error(error);
+      alert("No se pudieron cargar los clientes");
+    }
+  };
 
-    const clientes = [
-        {
-            tipoDocumento: "CC",
-            documento: "1012456789",
-            nombre: "Juan Pérez",
-            telefono: "3204567890",
-            correo: "juan@gmail.com",
-            ciudad: "Bogotá",
-            direccion: "Cra 10 #25-36",
-            estado: "Activo",
-            fechaRegistro: "12/03/2026",
-            ultimaVisita: "05/07/2026",
-            ordenes: 12,
-            garantias: 2,
-            vehiculos: [
-                {
-                    placa: "ABC123",
-                    marca: "Mazda",
-                    modelo: "CX5",
-                    estado: "Activo"
-                },
-                {
-                    placa: "XYZ456",
-                    marca: "Renault",
-                    modelo: "Duster",
-                    estado: "En Taller"
-                }
-            ]
+  const guardarCliente = async (cliente) => {
+    try {
+      if (clienteEditar?.idCliente) {
+        await actualizarCliente(clienteEditar.idCliente, cliente);
+      } else {
+        await crearCliente(cliente);
+      }
+      setAbrirModal(false);
+      setClienteEditar(null);
+      await cargarClientes();
+    } catch (error) {
+      console.error(error);
+      alert("No fue posible guardar el cliente");
+    }
+  };
 
-        },
-        {
-            documento: "1023654897",
-            nombre: "María López",
-            telefono: "3119874561",
-            correo: "maria@gmail.com",
-            estado: "Activo"
-        },
-        {
-            documento: "1001456321",
-            nombre: "Carlos Ruiz",
-            telefono: "3157412589",
-            correo: "carlos@gmail.com",
-            estado: "Inactivo"
-        },
-        {
-            documento: "1002456897",
-            nombre: "Laura Gómez",
-            telefono: "3214569874",
-            correo: "laura@gmail.com",
-            estado: "Activo"
+  const confirmarEliminarCliente = async () => {
+    try {
+      if (!clienteSeleccionado?.idCliente) {
+        throw new Error("No hay cliente seleccionado");
+      }
+      await eliminarCliente(clienteSeleccionado.idCliente);
+      setConfirmDelete(false);
+      setClienteSeleccionado(null);
+      await cargarClientes();
+    } catch (error) {
+      console.error(error);
+      alert("No fue posible eliminar el cliente");
+    }
+  };
+
+  const clientesFiltrados = clientes.filter((cliente) =>
+    cliente.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    cliente.documento?.includes(busqueda)
+  );
+
+  return (
+    <>
+      <PageHeader
+        title="Clientes"
+        subtitle="Administración de clientes registrados."
+        button={
+          <button
+            className="btnNuevo"
+            onClick={() => {
+              setClienteEditar(null);
+              setAbrirModal(true);
+            }}
+          >
+            <FaPlus />
+            Nuevo Cliente
+          </button>
         }
-    ];
-
-    return (
-
-        <>
-
-            <PageHeader
-
-                title="Clientes"
-
-                subtitle="Administración de clientes registrados."
-
-                button={
-
-                    <button
-                        className="btnNuevo"
-                        onClick={() => setAbrirModal(true)}
-                    >
-
-                        <FaPlus />
-
-                        Nuevo Cliente
-
-                    </button>
-
-                }
-
-            />
-
-            <div className="clientesCard">
-
-                <SearchBar
-
-                    placeholder="Buscar cliente..."
-
-                    value={busqueda}
-
-                    onChange={(e) => setBusqueda(e.target.value)}
-
-                />
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-
-                            <th>Documento</th>
-
-                            <th>Nombre</th>
-
-                            <th>Teléfono</th>
-
-                            <th>Correo</th>
-
-                            <th>Estado</th>
-
-                            <th>Acciones</th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                        {
-
-                            clientes.map((cliente, index) => (
-
-                                <tr key={index}>
-
-                                    <td>{cliente.documento}</td>
-
-                                    <td>{cliente.nombre}</td>
-
-                                    <td>{cliente.telefono}</td>
-
-                                    <td>{cliente.correo}</td>
-
-                                    <td>
-
-                                        <StatusBadge
-                                            status={cliente.estado}
-                                        />
-
-                                    </td>
-
-                                    <td>
-
-                                        <td>
-
-                                            <ActionButtons
-
-                                                onView={() => {
-
-                                                    setClienteSeleccionado(cliente);
-                                                    setDetalleOpen(true);
-
-                                                }}
-
-                                                onEdit={() => console.log(cliente)}
-
-                                                onDelete={() => setConfirmDelete(true)}
-
-                                            />
-
-                                        </td>
-
-                                    </td>
-
-                                </tr>
-
-                            ))
-
-                        }
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-
-            <ClienteModal
-                open={abrirModal}
-                onClose={() => setAbrirModal(false)}
-            />
-
-            <ConfirmModal
-
-                open={confirmDelete}
-
-                title="Eliminar Cliente"
-
-                message="¿Está seguro de eliminar este cliente? Esta acción solamente es visual por el momento."
-
-                onClose={() => setConfirmDelete(false)}
-
-                onConfirm={() => {
-
-                    console.log("Eliminar");
-
-                    setConfirmDelete(false);
-
-                }}
-
-            />
-
-            <DetailModal
-
-                open={detalleOpen}
-                title="Información del Cliente"
-                onClose={() => setDetalleOpen(false)}
-
-            >
-                <ClienteDetail
-                    cliente={clienteSeleccionado}
-                />
-
-            </DetailModal>
-
-
-        </>
-
-    );
-
+      />
+
+      <div className="clientesCard">
+        <SearchBar
+          placeholder="Buscar cliente..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
+
+        <table>
+          <thead>
+            <tr>
+              <th>Documento</th>
+              <th>Nombre</th>
+              <th>Teléfono</th>
+              <th>Correo</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {clientesFiltrados.map((cliente) => (
+              <tr key={cliente.idCliente || cliente.documento}>
+                <td>{cliente.documento}</td>
+                <td>{cliente.nombre}</td>
+                <td>{cliente.telefono}</td>
+                <td>{cliente.correo}</td>
+                <td>
+                  <StatusBadge status={cliente.estado} />
+                </td>
+                <td>
+                  <ActionButtons
+                    onView={async () => {
+                      try {
+                        const clienteDetalle = await obtenerCliente(cliente.idCliente);
+                        setClienteSeleccionado(clienteDetalle);
+                        setDetalleOpen(true);
+                      } catch (error) {
+                        console.error(error);
+                        alert("No fue posible obtener el cliente");
+                      }
+                    }}
+                    onEdit={() => {
+                      setClienteEditar(cliente);
+                      setAbrirModal(true);
+                    }}
+                    onDelete={() => {
+                      setClienteSeleccionado(cliente);
+                      setConfirmDelete(true);
+                    }}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <ClienteModal
+        open={abrirModal}
+        clienteEditar={clienteEditar}
+        onClose={() => {
+          setAbrirModal(false);
+          setClienteEditar(null);
+        }}
+        onSave={guardarCliente}
+      />
+
+      <ConfirmModal
+        open={confirmDelete}
+        title="Eliminar Cliente"
+        message="¿Está seguro de eliminar este cliente? Esta acción eliminará el cliente de forma permanente."
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={confirmarEliminarCliente}
+      />
+
+      <DetailModal
+        open={detalleOpen}
+        title="Información del Cliente"
+        onClose={() => setDetalleOpen(false)}
+      >
+        <ClienteDetail cliente={clienteSeleccionado} />
+      </DetailModal>
+    </>
+  );
 }

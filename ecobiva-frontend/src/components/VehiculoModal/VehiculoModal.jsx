@@ -1,73 +1,111 @@
 import "./VehiculoModal.css";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Button from "../Button/Button";
 import Input from "../Input/Input";
+import { obtenerClientes } from "../../services/clienteService";
 
-export default function VehiculoModal({ open, onClose }) {
-
+export default function VehiculoModal({ open, vehiculoEditar, onClose, onSave }) {
     const [vehiculo, setVehiculo] = useState({
-
         placa: "",
         marca: "",
         modelo: "",
         anio: "",
         color: "",
         kilometraje: "",
-        propietario: ""
-
+        combustible: "",
+        tipoVehiculo: "",
+        serialMotor: "",
+        especificacionesBateria: "",
+        idCliente: "",
+        estado: ""
     });
 
+    const [clientes, setClientes] = useState([]);
     const [errores, setErrores] = useState({});
+
+    useEffect(() => {
+        if (!open) return;
+
+        const cargarClientes = async () => {
+            try {
+                const data = await obtenerClientes();
+                setClientes(data);
+            } catch (error) {
+                console.error(error);
+            }
+        };
+
+        cargarClientes();
+
+        if (vehiculoEditar) {
+            setVehiculo({
+                placa: vehiculoEditar.placa || "",
+                marca: vehiculoEditar.marca || "",
+                modelo: vehiculoEditar.modelo || "",
+                anio: vehiculoEditar.anio || "",
+                color: vehiculoEditar.color || "",
+                kilometraje: vehiculoEditar.kilometraje || "",
+                combustible: vehiculoEditar.combustible || "",
+                tipoVehiculo: vehiculoEditar.tipoVehiculo || "",
+                serialMotor: vehiculoEditar.serialMotor || "",
+                especificacionesBateria: vehiculoEditar.especificacionesBateria || "",
+                idCliente: vehiculoEditar.idCliente || "",
+                estado: vehiculoEditar.estado || ""
+            });
+            setErrores({});
+            return;
+        }
+
+        setVehiculo({
+            placa: "",
+            marca: "",
+            modelo: "",
+            anio: "",
+            color: "",
+            kilometraje: "",
+            combustible: "",
+            tipoVehiculo: "",
+            serialMotor: "",
+            especificacionesBateria: "",
+            idCliente: "",
+            estado: ""
+        });
+        setErrores({});
+    }, [open, vehiculoEditar]);
 
     if (!open) return null;
 
-    const validar = () => {
+    const validar = async () => {
+        const nuevo = {};
 
-        let nuevo = {};
-
-        if (vehiculo.placa === "")
-            nuevo.placa = "Ingrese la placa.";
-
-        if (vehiculo.marca === "")
-            nuevo.marca = "Ingrese la marca.";
-
-        if (vehiculo.modelo === "")
-            nuevo.modelo = "Ingrese el modelo.";
-
-        if (vehiculo.propietario === "")
-            nuevo.propietario = "Seleccione un propietario.";
+        if (vehiculo.placa.trim() === "") nuevo.placa = "Ingrese la placa.";
+        if (vehiculo.marca.trim() === "") nuevo.marca = "Ingrese la marca.";
+        if (vehiculo.modelo.trim() === "") nuevo.modelo = "Ingrese el modelo.";
+        if (!vehiculo.idCliente) nuevo.idCliente = "Seleccione un cliente.";
 
         setErrores(nuevo);
+        if (Object.keys(nuevo).length > 0) return;
 
+        if (onSave) await onSave(vehiculo);
+        onClose();
     };
 
     return (
-
         <div className="modalOverlay">
-
             <div className="vehiculoModal">
-
                 <div className="vehiculoHeader">
-
-                    <h2>Registrar Vehículo</h2>
-
+                    <h2>{vehiculoEditar ? "Editar Vehículo" : "Registrar Vehículo"}</h2>
                 </div>
 
                 <div className="vehiculoBody">
-
                     <Input
                         label="Placa"
                         required
                         value={vehiculo.placa}
                         error={errores.placa}
-                        onChange={(e) =>
-                            setVehiculo({
-                                ...vehiculo,
-                                placa: e.target.value
-                            })
-                        }
+                        onChange={(e) => setVehiculo({ ...vehiculo, placa: e.target.value })}
                     />
 
                     <Input
@@ -75,12 +113,7 @@ export default function VehiculoModal({ open, onClose }) {
                         required
                         value={vehiculo.marca}
                         error={errores.marca}
-                        onChange={(e) =>
-                            setVehiculo({
-                                ...vehiculo,
-                                marca: e.target.value
-                            })
-                        }
+                        onChange={(e) => setVehiculo({ ...vehiculo, marca: e.target.value })}
                     />
 
                     <Input
@@ -88,84 +121,85 @@ export default function VehiculoModal({ open, onClose }) {
                         required
                         value={vehiculo.modelo}
                         error={errores.modelo}
-                        onChange={(e) =>
-                            setVehiculo({
-                                ...vehiculo,
-                                modelo: e.target.value
-                            })
-                        }
+                        onChange={(e) => setVehiculo({ ...vehiculo, modelo: e.target.value })}
                     />
 
                     <Input
                         label="Año"
                         value={vehiculo.anio}
-                        onChange={(e) =>
-                            setVehiculo({
-                                ...vehiculo,
-                                anio: e.target.value
-                            })
-                        }
+                        onChange={(e) => setVehiculo({ ...vehiculo, anio: e.target.value })}
                     />
 
                     <Input
                         label="Color"
                         value={vehiculo.color}
-                        onChange={(e) =>
-                            setVehiculo({
-                                ...vehiculo,
-                                color: e.target.value
-                            })
-                        }
+                        onChange={(e) => setVehiculo({ ...vehiculo, color: e.target.value })}
                     />
 
                     <Input
                         label="Kilometraje"
                         value={vehiculo.kilometraje}
-                        onChange={(e) =>
-                            setVehiculo({
-                                ...vehiculo,
-                                kilometraje: e.target.value
-                            })
-                        }
+                        onChange={(e) => setVehiculo({ ...vehiculo, kilometraje: e.target.value })}
                     />
 
                     <Input
-                        label="Propietario"
-                        required
-                        value={vehiculo.propietario}
-                        error={errores.propietario}
-                        onChange={(e) =>
-                            setVehiculo({
-                                ...vehiculo,
-                                propietario: e.target.value
-                            })
-                        }
+                        label="Combustible"
+                        value={vehiculo.combustible}
+                        onChange={(e) => setVehiculo({ ...vehiculo, combustible: e.target.value })}
                     />
 
+                    <Input
+                        label="Tipo de Vehículo"
+                        value={vehiculo.tipoVehiculo}
+                        onChange={(e) => setVehiculo({ ...vehiculo, tipoVehiculo: e.target.value })}
+                    />
+
+                    <Input
+                        label="Serial Motor"
+                        value={vehiculo.serialMotor}
+                        onChange={(e) => setVehiculo({ ...vehiculo, serialMotor: e.target.value })}
+                    />
+
+                    <Input
+                        label="Especificaciones de Batería"
+                        value={vehiculo.especificacionesBateria}
+                        onChange={(e) => setVehiculo({ ...vehiculo, especificacionesBateria: e.target.value })}
+                    />
+
+                    <div className="inputGroup">
+                        <label>
+                            Cliente<span>*</span>
+                        </label>
+                        <select
+                            value={vehiculo.idCliente}
+                            onChange={(e) => setVehiculo({ ...vehiculo, idCliente: e.target.value })}
+                        >
+                            <option value="">Seleccione un cliente</option>
+                            {clientes.map((cliente) => (
+                                <option key={cliente.idCliente} value={cliente.idCliente}>
+                                    {cliente.nombre} ({cliente.documento})
+                                </option>
+                            ))}
+                        </select>
+                        {errores.idCliente && <p className="inputError">{errores.idCliente}</p>}
+                    </div>
+
+                    <Input
+                        label="Estado"
+                        value={vehiculo.estado}
+                        onChange={(e) => setVehiculo({ ...vehiculo, estado: e.target.value })}
+                    />
                 </div>
 
                 <div className="vehiculoFooter">
-
-                    <Button
-                        variant="secondary"
-                        onClick={onClose}
-                    >
+                    <Button variant="secondary" onClick={onClose}>
                         Cancelar
                     </Button>
-
-                    <Button
-                        variant="primary"
-                        onClick={validar}
-                    >
+                    <Button variant="primary" onClick={validar}>
                         Guardar
                     </Button>
-
                 </div>
-
             </div>
-
         </div>
-
     );
-
 }

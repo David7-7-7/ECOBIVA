@@ -1,0 +1,15 @@
+@import "../Input/Input.css";
+
+.empleadoModalFooter{
+
+display:flex;
+
+justify-content:flex-end;
+
+gap:12px;
+
+margin-top:10px;
+
+flex-wrap:wrap;
+
+}

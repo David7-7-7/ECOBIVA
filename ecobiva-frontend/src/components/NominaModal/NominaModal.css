@@ -1,0 +1,67 @@
+@import "../Input/Input.css";
+
+.inputGroup select{
+
+padding:13px;
+
+border:1px solid #cbd5e1;
+
+border-radius:10px;
+
+font-size:15px;
+
+}
+
+.nominaPreview{
+
+background:#eff6ff;
+
+border:1px solid #dbeafe;
+
+border-radius:10px;
+
+padding:16px 18px;
+
+margin-bottom:18px;
+
+}
+
+.nominaPreview h4{
+
+margin:0 0 10px 0;
+
+color:#1e3a8a;
+
+}
+
+.nominaPreview p{
+
+margin:6px 0;
+
+color:#334155;
+
+font-size:14px;
+
+}
+
+.nominaPreview span{
+
+font-weight:600;
+
+color:#0f172a;
+
+}
+
+.nominaModalFooter{
+
+display:flex;
+
+justify-content:flex-end;
+
+gap:12px;
+
+margin-top:10px;
+
+flex-wrap:wrap;
+
+}

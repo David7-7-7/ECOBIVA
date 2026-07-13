@@ -1,15 +1,13 @@
 import { auditoriaApi } from "../api/api";
 
 export async function consultarAuditoria(filtros) {
+  const { data } = await auditoriaApi.consultar(filtros);
 
-    const { data } = await auditoriaApi.consultar(filtros);
-
-    return data;
-
+  return data;
 }
 
-export function exportarAuditoria(filtros) {
+export async function exportarAuditoria(filtros) {
+  const { data } = await auditoriaApi.exportar(filtros);
 
-    return auditoriaApi.exportarUrl(filtros);
-
+  return data;
 }

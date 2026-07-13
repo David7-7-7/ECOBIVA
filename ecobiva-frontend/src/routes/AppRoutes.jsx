@@ -22,121 +22,67 @@ import Permisos from "../pages/Permisos/Permisos";
 import Auditoria from "../pages/Auditoria/Auditoria";
 import CambiarPassword from "../pages/Perfil/CambiarPassword";
 
+// RRHH
+import Empleados from "../pages/Empleados/Empleados";
+import HistorialCargo from "../pages/HistorialCargo/HistorialCargo";
+import Nomina from "../pages/Nomina/Nomina";
+
 export default function AppRoutes() {
+  return (
+    <Routes>
+      {/* Públicas */}
 
-    return (
+      <Route path="/" element={<Navigate to="/login" replace />} />
 
-        <Routes>
+      <Route path="/login" element={<Login />} />
 
-            {/* Públicas */}
+      <Route path="/recuperar" element={<Recuperacion />} />
 
-            <Route
-                path="/"
-                element={<Navigate to="/login" replace />}
-            />
+      {/* Todas las rutas privadas usan MainLayout */}
 
-            <Route
-                path="/login"
-                element={<Login />}
-            />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<MainLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
 
-            <Route
-                path="/recuperar"
-                element={<Recuperacion />}
-            />
+          <Route path="/clientes" element={<Clientes />} />
 
-            {/* Todas las rutas privadas usan MainLayout */}
+          <Route path="/vehiculos" element={<Vehiculos />} />
 
-            <Route element={<ProtectedRoute />}>
+          <Route path="/tecnicos" element={<Tecnicos />} />
 
-                <Route element={<MainLayout />}>
+          <Route path="/inventario" element={<Inventario />} />
 
-                    <Route
-                        path="/dashboard"
-                        element={<Dashboard />}
-                    />
+          <Route path="/ordenes" element={<Ordenes />} />
 
-                    <Route
-                        path="/clientes"
-                        element={<Clientes />}
-                    />
+          <Route path="/reportes" element={<Reportes />} />
 
-                    <Route
-                        path="/vehiculos"
-                        element={<Vehiculos />}
-                    />
+          <Route path="/configuracion" element={<Configuracion />} />
 
-                    <Route
-                        path="/tecnicos"
-                        element={<Tecnicos />}
-                    />
+          <Route path="/perfil" element={<CambiarPassword />} />
+        </Route>
+      </Route>
 
-                    <Route
-                        path="/inventario"
-                        element={<Inventario />}
-                    />
+      {/* Solo Administrador */}
 
-                    <Route
-                        path="/ordenes"
-                        element={<Ordenes />}
-                    />
+      <Route element={<ProtectedRoute rolesPermitidos={["Admin"]} />}>
+        <Route element={<MainLayout />}>
+          <Route path="/usuarios" element={<Usuarios />} />
 
-                    <Route
-                        path="/reportes"
-                        element={<Reportes />}
-                    />
+          <Route path="/permisos" element={<Permisos />} />
 
-                    <Route
-                        path="/configuracion"
-                        element={<Configuracion />}
-                    />
+          <Route path="/auditoria" element={<Auditoria />} />
 
-                    <Route
-                        path="/perfil"
-                        element={<CambiarPassword />}
-                    />
+          <Route path="/empleados" element={<Empleados />} />
 
-                </Route>
+          <Route path="/historial-cargo" element={<HistorialCargo />} />
 
-            </Route>
+          <Route path="/nomina" element={<Nomina />} />
+        </Route>
+      </Route>
 
-            {/* Solo Administrador */}
+      {/* Ruta inexistente */}
 
-            <Route
-                element={<ProtectedRoute rolesPermitidos={["Admin"]} />}
-            >
-
-                <Route element={<MainLayout />}>
-
-                    <Route
-                        path="/usuarios"
-                        element={<Usuarios />}
-                    />
-
-                    <Route
-                        path="/permisos"
-                        element={<Permisos />}
-                    />
-
-                    <Route
-                        path="/auditoria"
-                        element={<Auditoria />}
-                    />
-
-                </Route>
-
-            </Route>
-
-            {/* Ruta inexistente */}
-
-            <Route
-                path="*"
-                element={<Navigate to="/dashboard" replace />}
-            />
-
-        </Routes>
-
-    );
-
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
+  );
 }
-

@@ -11,17 +11,23 @@ export default function ActionButtons({
 }) {
   return (
     <div className="actionButtons">
-      <button className="accion ver" onClick={onView} title="Ver">
-        <FaEye />
-      </button>
+      {onView && (
+        <button className="accion ver" onClick={onView} title="Ver">
+          <FaEye />
+        </button>
+      )}
 
-      <button className="accion editar" onClick={onEdit} title="Editar">
-        <FaEdit />
-      </button>
+      {onEdit && (
+        <button className="accion editar" onClick={onEdit} title="Editar">
+          <FaEdit />
+        </button>
+      )}
 
-      <button className="accion eliminar" onClick={onDelete} title="Eliminar">
-        <FaTrash />
-      </button>
+      {onDelete && (
+        <button className="accion eliminar" onClick={onDelete} title="Eliminar">
+          <FaTrash />
+        </button>
+      )}
     </div>
   );
 }

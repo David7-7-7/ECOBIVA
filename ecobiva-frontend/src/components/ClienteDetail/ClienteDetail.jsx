@@ -126,27 +126,23 @@ export default function ClienteDetail({cliente}){
 
                         {
 
-                            cliente.vehiculos.map((v,index)=>(
-
-                                <tr key={index}>
-
-                                    <td>{v.placa}</td>
-
-                                    <td>{v.marca}</td>
-
-                                    <td>{v.modelo}</td>
-
-                                    <td>
-
-                                        <StatusBadge
-                                            status={v.estado}
-                                        />
-
-                                    </td>
-
+                            (cliente.vehiculos || []).length > 0 ?
+                                cliente.vehiculos.map((v,index)=>(
+                                    <tr key={index}>
+                                        <td>{v.placa}</td>
+                                        <td>{v.marca}</td>
+                                        <td>{v.modelo}</td>
+                                        <td>
+                                            <StatusBadge
+                                                status={v.estado}
+                                            />
+                                        </td>
+                                    </tr>
+                                ))
+                                :
+                                <tr>
+                                    <td colSpan="4">No hay vehículos registrados.</td>
                                 </tr>
-
-                            ))
 
                         }
 

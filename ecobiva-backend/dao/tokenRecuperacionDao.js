@@ -1,17 +1,17 @@
-const pool = require('../config/db');
-const crypto = require('crypto');
+const pool = require("../config/db");
+const crypto = require("crypto");
 
 /**
  * Genera un token aleatorio seguro, lo guarda con 30 min de vigencia.
  */
 async function generar(idUsuario) {
-  const token = crypto.randomBytes(32).toString('hex');
+  const token = crypto.randomBytes(32).toString("hex");
   const fechaExpiracion = new Date(Date.now() + 30 * 60 * 1000); // 30 minutos
 
   await pool.execute(
     `INSERT INTO TokenRecuperacion (token, fechaGeneracion, fechaExpiracion, usado, idUsuario)
      VALUES (?, NOW(), ?, FALSE, ?)`,
-    [token, fechaExpiracion, idUsuario]
+    [token, fechaExpiracion, idUsuario],
   );
 
   return token;
@@ -25,7 +25,7 @@ async function obtenerValido(token) {
     `SELECT idToken, idUsuario, fechaExpiracion, usado
      FROM TokenRecuperacion
      WHERE token = ?`,
-    [token]
+    [token],
   );
 
   if (rows.length === 0) return null;
@@ -40,8 +40,8 @@ async function obtenerValido(token) {
 
 async function marcarUsado(idToken) {
   await pool.execute(
-    'UPDATE TokenRecuperacion SET usado = TRUE WHERE idToken = ?',
-    [idToken]
+    "UPDATE TokenRecuperacion SET usado = TRUE WHERE idToken = ?",
+    [idToken],
   );
 }
 

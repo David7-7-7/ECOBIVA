@@ -35,8 +35,8 @@ export default function VehiculoDetail({ vehiculo }) {
 
                 <div className="detailGrid">
 
-                    <DataField label="Cliente" value={vehiculo.propietario} />
-                    <DataField label="Teléfono" value={vehiculo.telefono} />
+                    <DataField label="Cliente" value={vehiculo.nombreCliente || vehiculo.propietario} />
+                    <DataField label="Teléfono" value={vehiculo.telefono || ""} />
 
                 </div>
 

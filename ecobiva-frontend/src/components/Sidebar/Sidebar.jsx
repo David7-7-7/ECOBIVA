@@ -15,6 +15,9 @@ import {
   FaLock,
   FaSignOutAlt,
   FaBars,
+  FaUserTie,
+  FaExchangeAlt,
+  FaMoneyCheckAlt,
 } from "react-icons/fa";
 
 import { Link, useLocation } from "react-router-dom";
@@ -89,6 +92,26 @@ const MENU = [
     nombre: "Auditoría",
     ruta: "/auditoria",
     icono: <FaHistory />,
+    roles: ["Admin"],
+  },
+
+  // RRHH
+  {
+    nombre: "Empleados",
+    ruta: "/empleados",
+    icono: <FaUserTie />,
+    roles: ["Admin"],
+  },
+  {
+    nombre: "Historial Cargo",
+    ruta: "/historial-cargo",
+    icono: <FaExchangeAlt />,
+    roles: ["Admin"],
+  },
+  {
+    nombre: "Nómina",
+    ruta: "/nomina",
+    icono: <FaMoneyCheckAlt />,
     roles: ["Admin"],
   },
 

@@ -1,235 +1,198 @@
 import "./Ordenes.css";
 
-import MainLayout from "../../layouts/MainLayout";
-import { FaPlus, FaSearch, FaFilter } from "react-icons/fa";
+import { useEffect, useState } from "react";
+import { FaPlus } from "react-icons/fa";
 import PageHeader from "../../components/PageHeader/PageHeader";
 import ActionButtons from "../../components/ActionButtons/ActionButtons";
 import StatusBadge from "../../components/StatusBadge/StatusBadge";
-import { useState } from "react";
-
+import SearchBar from "../../components/SearchBar/SearchBar";
 import DetailModal from "../../components/DetailModal/DetailModal";
 import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
 import OrdenDetail from "../../components/OrdenDetail/OrdenDetail";
-
-
+import OrdenModal from "../../components/OrdenModal/OrdenModal";
+import {
+  obtenerOrdenes,
+  obtenerOrden,
+  crearOrden,
+  actualizarOrden,
+  eliminarOrden,
+} from "../../services/ordenService";
 
 export default function Ordenes() {
+  const [ordenes, setOrdenes] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
+  const [ordenSeleccionada, setOrdenSeleccionada] = useState(null);
+  const [ordenEditar, setOrdenEditar] = useState(null);
+  const [ordenEliminar, setOrdenEliminar] = useState(null);
+  const [detalleOpen, setDetalleOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
-    const [ordenSeleccionada, setOrdenSeleccionada] = useState(null);
-    const [detalleOpen, setDetalleOpen] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState(false);
+  useEffect(() => {
+    cargarOrdenes();
+  }, []);
 
-    const ordenes = [
+  const cargarOrdenes = async () => {
+    try {
+      const data = await obtenerOrdenes();
+      setOrdenes(data);
+    } catch (error) {
+      console.error(error);
+      alert("No se pudieron cargar las órdenes de servicio.");
+    }
+  };
 
-        {
-            id: "OT-001",
-            cliente: "Juan Pérez",
-            vehiculo: "Mazda CX-5",
-            placa: "ABC123",
-            tecnico: "Carlos Martínez",
-            servicio: "Mantenimiento Preventivo",
-            fecha: "05/07/2026",
-            entrega: "06/07/2026",
-            estado: "En Taller",
-            total: "$450.000",
-            observaciones: "Cambio de aceite, filtros y revisión general."
-        },
+  const guardarOrden = async (orden) => {
+    try {
+      if (ordenEditar?.id) {
+        await actualizarOrden(ordenEditar.id, orden);
+      } else {
+        await crearOrden(orden);
+      }
+      cerrarModal();
+      await cargarOrdenes();
+    } catch (error) {
+      console.error(error);
+      alert("No fue posible guardar la orden.");
+    }
+  };
 
-        {
-            id: "OT-002",
-            cliente: "María López",
-            vehiculo: "Chevrolet Onix",
-            placa: "XYZ456",
-            tecnico: "Andrés Rojas",
-            servicio: "Cambio de Frenos",
-            fecha: "04/07/2026",
-            entrega: "05/07/2026",
-            estado: "Finalizado",
-            total: "$820.000",
-            observaciones: "Cambio de pastillas y discos delanteros."
-        },
+  const cerrarModal = () => {
+    setModalOpen(false);
+    setOrdenEditar(null);
+  };
 
-        {
-            id: "OT-003",
-            cliente: "Carlos Ruiz",
-            vehiculo: "Renault Duster",
-            placa: "JKL789",
-            tecnico: "Luis Gómez",
-            servicio: "Diagnóstico",
-            fecha: "03/07/2026",
-            entrega: "",
-            estado: "Pendiente",
-            total: "$120.000",
-            observaciones: "Vehículo presenta falla eléctrica."
+  const confirmarEliminarOrden = async () => {
+    try {
+      if (!ordenEliminar?.id) {
+        throw new Error("No hay orden seleccionada");
+      }
+      await eliminarOrden(ordenEliminar.id);
+      setConfirmDelete(false);
+      setOrdenEliminar(null);
+      await cargarOrdenes();
+    } catch (error) {
+      console.error(error);
+      alert("No fue posible eliminar la orden.");
+    }
+  };
+
+  const ordenesFiltradas = ordenes.filter((orden) =>
+    [orden.id, orden.cliente, orden.vehiculo, orden.tecnico, orden.servicio, orden.estado]
+      .join(" ")
+      .toLowerCase()
+      .includes(busqueda.toLowerCase())
+  );
+
+  return (
+    <>
+      <PageHeader
+        title="Órdenes"
+        subtitle="Gestión de órdenes de servicio."
+        button={
+          <button
+            className="btnNuevo"
+            onClick={() => {
+              setOrdenEditar(null);
+              setModalOpen(true);
+            }}
+          >
+            <FaPlus />
+            Nueva Orden
+          </button>
         }
+      />
 
-    ];
-    return (
+      <div className="ordenCard">
+        <div className="toolbar">
+          <SearchBar
+            placeholder="Buscar orden..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            width="100%"
+          />
+        </div>
 
-        <>
+        <div className="tableWrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>OT</th>
+                <th>Cliente</th>
+                <th>Vehículo</th>
+                <th>Técnico</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+                <th>Total</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
 
-            <PageHeader
-
-                title="Órdenes"
-
-                subtitle="Gestión de órdenes de servicio."
-
-                button={
-
-                    <button className="btnNuevo">
-
-                        <FaPlus />
-
-                        Nueva Orden
-
-                    </button>
-
-                }
-
-            />
-
-            <div className="ordenCard">
-
-                <div className="toolbar">
-
-                    <div className="barraBusqueda">
-
-                        <FaSearch />
-
-                        <input
-
-                            type="text"
-
-                            placeholder="Buscar orden..."
-
-                        />
-
-                    </div>
-
-                    <button className="btnFiltro">
-
-                        <FaFilter />
-
-                        Filtrar
-
-                    </button>
-
-                </div>
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-                            <th>OT</th>
-                            <th>Cliente</th>
-                            <th>Vehículo</th>
-                            <th>Técnico</th>
-                            <th>Estado</th>
-                            <th>Fecha</th>
-                            <th>Total</th>
-                            <th>Acciones</th>
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                        {
-
-                            ordenes.map((orden, index) => (
-
-                                <tr key={index}>
-                                    <td>
-                                        <strong>
-                                            {orden.id}
-                                        </strong>
-                                    </td>
-
-                                    <td>{orden.cliente}</td>
-                                    <td>{orden.vehiculo}</td>
-                                    <td>{orden.tecnico}</td>
-
-                                    <td>
-
-                                        <StatusBadge
-                                            status={orden.estado}
-                                        />
-
-                                    </td>
-
-                                    <td>{orden.fecha}</td>
-                                    <td>{orden.total}</td>
-
-                                    <td>
-
-                                        <ActionButtons
-
-                                            onView={() => {
-                                                setOrdenSeleccionada(orden);
-                                                setDetalleOpen(true);
-                                            }}
-
-                                            onEdit={() => console.log(orden)}
-
-                                            onDelete={() => setConfirmDelete(true)}
-
-                                        />
-
-                                    </td>
-
-                                </tr>
-                            ))
-
+            <tbody>
+              {ordenesFiltradas.map((orden) => (
+                <tr key={orden.id || `${orden.cliente}-${orden.fecha}`}>
+                  <td>
+                    <strong>{orden.id}</strong>
+                  </td>
+                  <td>{orden.cliente}</td>
+                  <td>{orden.vehiculo}</td>
+                  <td>{orden.tecnico}</td>
+                  <td>
+                    <StatusBadge status={orden.estado} />
+                  </td>
+                  <td>{orden.fecha}</td>
+                  <td>{orden.total}</td>
+                  <td>
+                    <ActionButtons
+                      onView={async () => {
+                        try {
+                          const detalle = await obtenerOrden(orden.id);
+                          setOrdenSeleccionada(detalle);
+                          setDetalleOpen(true);
+                        } catch (error) {
+                          console.error(error);
+                          alert("No fue posible obtener la orden.");
                         }
+                      }}
+                      onEdit={() => {
+                        setOrdenEditar(orden);
+                        setModalOpen(true);
+                      }}
+                      onDelete={() => {
+                        setOrdenEliminar(orden);
+                        setConfirmDelete(true);
+                      }}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-                    </tbody>
+      <OrdenModal
+        open={modalOpen}
+        ordenEditar={ordenEditar}
+        onClose={cerrarModal}
+        onSave={guardarOrden}
+      />
 
-                </table>
+      <DetailModal
+        open={detalleOpen}
+        title="Información de la Orden"
+        onClose={() => setDetalleOpen(false)}
+      >
+        <OrdenDetail orden={ordenSeleccionada} />
+      </DetailModal>
 
-            </div>
-
-            <DetailModal
-
-                open={detalleOpen}
-
-                title="Información de la Orden"
-
-                onClose={() => setDetalleOpen(false)}
-
-            >
-
-                <OrdenDetail
-
-                    orden={ordenSeleccionada}
-
-                />
-
-            </DetailModal>
-
-            <ConfirmModal
-
-                open={confirmDelete}
-
-                title="Eliminar Orden"
-
-                message="¿Está seguro de eliminar esta orden? Esta acción solamente es visual."
-
-                onClose={() => setConfirmDelete(false)}
-
-                onConfirm={() => {
-
-                    console.log("Eliminar Orden");
-
-                    setConfirmDelete(false);
-
-                }}
-
-            />
-
-
-        </>
-
-    )
-
+      <ConfirmModal
+        open={confirmDelete}
+        title="Eliminar Orden"
+        message="¿Está seguro de eliminar esta orden? Esta acción eliminará el registro permanentemente."
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={confirmarEliminarOrden}
+      />
+    </>
+  );
 }

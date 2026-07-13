@@ -1,0 +1,64 @@
+.ordenModalBody {
+  display: grid;
+  gap: 18px;
+}
+
+.ordenModalId {
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.ordenModalGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.ordenModalFull {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+}
+
+.ordenModalFull textarea {
+  min-height: 130px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  resize: vertical;
+}
+
+.ordenModalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.ordenModalInfo {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+.ordenModalInfo p {
+  margin: 0;
+  color: #334155;
+}
+
+@media (max-width: 900px) {
+  .ordenModalGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .ordenModalFooter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

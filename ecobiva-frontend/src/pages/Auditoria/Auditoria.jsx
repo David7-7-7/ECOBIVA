@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { FaSearch, FaFileCsv, FaHistory } from "react-icons/fa";
 import { auditoriaApi } from "../../api/api";
+import { exportarAuditoria } from "../../services/auditoriaService";
 
 export default function Auditoria() {
   const [filtros, setFiltros] = useState({
@@ -51,16 +52,36 @@ export default function Auditoria() {
     consultar();
   }, []);
 
-  function exportar() {
-    const params = {};
+  async function exportar() {
+    setError("");
 
-    if (filtros.modulo) params.modulo = filtros.modulo;
+    try {
+      const params = {};
 
-    if (filtros.desde) params.desde = filtros.desde;
+      if (filtros.modulo) params.modulo = filtros.modulo;
 
-    if (filtros.hasta) params.hasta = filtros.hasta;
+      if (filtros.desde) params.desde = filtros.desde;
 
-    window.open(auditoriaApi.exportarUrl(params), "_blank");
+      if (filtros.hasta) params.hasta = filtros.hasta;
+
+      const blob = await exportarAuditoria(params);
+
+      const url = window.URL.createObjectURL(blob);
+      const enlace = document.createElement("a");
+
+      enlace.href = url;
+      enlace.download = `auditoria_${Date.now()}.csv`;
+
+      document.body.appendChild(enlace);
+      enlace.click();
+      enlace.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(
+        err.response?.data?.error || "No fue posible exportar la auditoría",
+      );
+    }
   }
 
   return (
