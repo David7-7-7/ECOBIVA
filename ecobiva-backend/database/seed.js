@@ -275,6 +275,836 @@ async function sembrarUsuarioDePrueba(conn, datos) {
   );
 }
 
+// =============================================================================
+// DATOS DE NEGOCIO — poblar el resto de las tablas con datos de ejemplo
+// coherentes entre sí (mismos clientes/vehículos/usuarios se reutilizan en
+// todo el flujo: orden -> diagnóstico -> evidencia -> firma -> garantía).
+// Todo idempotente: se busca por clave natural antes de insertar.
+// =============================================================================
+
+function fechaHace(dias) {
+  const d = new Date();
+  d.setDate(d.getDate() - dias);
+  return d;
+}
+
+async function obtenerIdUsuarioPorCorreo(conn, correo) {
+  const [rows] = await conn.execute(
+    "SELECT idUsuario FROM Usuario WHERE correo = ?",
+    [correo],
+  );
+  if (rows.length === 0) {
+    throw new Error(
+      `No existe el usuario "${correo}". ¿Corrió sembrarUsuarioDePrueba antes?`,
+    );
+  }
+  return rows[0].idUsuario;
+}
+
+async function obtenerIdEmpleadoPorDocumento(conn, documento) {
+  const [rows] = await conn.execute(
+    "SELECT idEmpleado FROM Empleado WHERE documento = ?",
+    [documento],
+  );
+  if (rows.length === 0) {
+    throw new Error(`No existe el empleado con documento "${documento}".`);
+  }
+  return rows[0].idEmpleado;
+}
+
+// -----------------------------------------------------------------------------
+// Repuestos (catálogo). Algunos se siembran con stock por debajo del mínimo
+// a propósito, para que AlertaStock tenga algo real que mostrar.
+// -----------------------------------------------------------------------------
+const REPUESTOS = [
+  {
+    nombre: "Pastillas de freno delanteras",
+    categoria: "Frenos",
+    precioUnitario: 45000,
+    proveedor: "FrenosCol S.A.",
+    stockActual: 3,
+    stockMinimo: 5,
+  },
+  {
+    nombre: "Filtro de aceite",
+    categoria: "Mantenimiento",
+    precioUnitario: 18000,
+    proveedor: "MotoPartes Ltda",
+    stockActual: 20,
+    stockMinimo: 5,
+  },
+  {
+    nombre: "Aceite motor sintético 5W-30 (1L)",
+    categoria: "Lubricantes",
+    precioUnitario: 35000,
+    proveedor: "LubriMax",
+    stockActual: 15,
+    stockMinimo: 8,
+  },
+  {
+    nombre: "Amortiguador delantero",
+    categoria: "Suspensión",
+    precioUnitario: 120000,
+    proveedor: "SuspenCol",
+    stockActual: 2,
+    stockMinimo: 4,
+  },
+  {
+    nombre: "Kit de cables y conectores eléctricos",
+    categoria: "Eléctrico",
+    precioUnitario: 25000,
+    proveedor: "ElectroMoto",
+    stockActual: 10,
+    stockMinimo: 5,
+  },
+  {
+    nombre: "Controlador de motor eléctrico",
+    categoria: "Eléctrico",
+    precioUnitario: 280000,
+    proveedor: "EVParts",
+    stockActual: 4,
+    stockMinimo: 3,
+  },
+];
+
+async function sembrarRepuestos(conn) {
+  for (const r of REPUESTOS) {
+    const [existente] = await conn.execute(
+      "SELECT idRepuesto FROM Repuesto WHERE nombre = ?",
+      [r.nombre],
+    );
+    if (existente.length > 0) continue;
+
+    await conn.execute(
+      `INSERT INTO Repuesto (nombre, categoria, precioUnitario, proveedor, stockActual, stockMinimo)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        r.nombre,
+        r.categoria,
+        r.precioUnitario,
+        r.proveedor,
+        r.stockActual,
+        r.stockMinimo,
+      ],
+    );
+  }
+  console.log("✅ Catálogo de repuestos sembrado.");
+}
+
+async function sembrarAlertasStock(conn) {
+  const [bajos] = await conn.execute(
+    "SELECT idRepuesto FROM Repuesto WHERE stockActual < stockMinimo",
+  );
+
+  for (const r of bajos) {
+    const [existente] = await conn.execute(
+      "SELECT idAlerta FROM AlertaStock WHERE idRepuesto = ? AND estadoGestion = 'pendiente'",
+      [r.idRepuesto],
+    );
+    if (existente.length > 0) continue;
+
+    await conn.execute(
+      "INSERT INTO AlertaStock (estadoGestion, idRepuesto) VALUES ('pendiente', ?)",
+      [r.idRepuesto],
+    );
+  }
+  console.log("✅ Alertas de stock generadas para repuestos bajo el mínimo.");
+}
+
+// -----------------------------------------------------------------------------
+// Clientes + Vehículos
+// -----------------------------------------------------------------------------
+const CLIENTES = [
+  {
+    nombre: "Juan Pérez",
+    telefono: "3204567890",
+    correo: "juan.perez@example.com",
+    documento: "1012456789",
+    preferenciaNotificacion: "WhatsApp",
+    vehiculos: [
+      {
+        placa: "EVA123",
+        marca: "EcoMoto",
+        modelo: "X1",
+        anio: 2023,
+        serialMotor: "MTR-0001",
+        tipoVehiculo: "Motocicleta Eléctrica",
+        especificacionesBateria: "60V 20Ah",
+      },
+    ],
+  },
+  {
+    nombre: "María Gómez",
+    telefono: "3157894561",
+    correo: "maria.gomez@example.com",
+    documento: "1098765432",
+    preferenciaNotificacion: "Correo",
+    vehiculos: [
+      {
+        placa: "EVB456",
+        marca: "EcoMoto",
+        modelo: "X2 Pro",
+        anio: 2024,
+        serialMotor: "MTR-0002",
+        tipoVehiculo: "Motocicleta Eléctrica",
+        especificacionesBateria: "72V 30Ah",
+      },
+    ],
+  },
+  {
+    nombre: "Carlos Ramírez",
+    telefono: "3012345678",
+    correo: "carlos.ramirez@example.com",
+    documento: "1076543210",
+    preferenciaNotificacion: "SMS",
+    vehiculos: [
+      {
+        placa: "EVC789",
+        marca: "Voltium",
+        modelo: "Urban",
+        anio: 2022,
+        serialMotor: "MTR-0003",
+        tipoVehiculo: "Motocicleta Eléctrica",
+        especificacionesBateria: "60V 20Ah",
+      },
+      {
+        placa: "EVC790",
+        marca: "Voltium",
+        modelo: "Cargo",
+        anio: 2023,
+        serialMotor: "MTR-0004",
+        tipoVehiculo: "Motocicleta de Carga Eléctrica",
+        especificacionesBateria: "72V 40Ah",
+      },
+    ],
+  },
+];
+
+async function sembrarClientesYVehiculos(conn) {
+  for (const c of CLIENTES) {
+    let idCliente;
+    const [existente] = await conn.execute(
+      "SELECT idCliente FROM Cliente WHERE documento = ?",
+      [c.documento],
+    );
+
+    if (existente.length > 0) {
+      idCliente = existente[0].idCliente;
+    } else {
+      const [res] = await conn.execute(
+        `INSERT INTO Cliente (nombre, telefono, correo, documento, preferenciaNotificacion, estado, puntosAcumulados)
+         VALUES (?, ?, ?, ?, ?, 1, 0)`,
+        [
+          c.nombre,
+          c.telefono,
+          c.correo,
+          c.documento,
+          c.preferenciaNotificacion,
+        ],
+      );
+      idCliente = res.insertId;
+    }
+
+    for (const v of c.vehiculos) {
+      const [existeVehiculo] = await conn.execute(
+        "SELECT idVehiculo FROM Vehiculo WHERE placa = ?",
+        [v.placa],
+      );
+      if (existeVehiculo.length > 0) continue;
+
+      await conn.execute(
+        `INSERT INTO Vehiculo (placa, marca, modelo, anio, serialMotor, tipoVehiculo, especificacionesBateria, idCliente)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          v.placa,
+          v.marca,
+          v.modelo,
+          v.anio,
+          v.serialMotor,
+          v.tipoVehiculo,
+          v.especificacionesBateria,
+          idCliente,
+        ],
+      );
+    }
+  }
+  console.log("✅ Clientes y vehículos sembrados.");
+}
+
+// -----------------------------------------------------------------------------
+// Baterías (Repuesto + Bateria). BAT-0002 queda instalada en el vehículo
+// EVB456 para tener un ejemplo de batería "en uso" y no solo en bodega.
+// -----------------------------------------------------------------------------
+async function sembrarBaterias(conn) {
+  const [vehiculoEVB456] = await conn.execute(
+    "SELECT idVehiculo FROM Vehiculo WHERE placa = 'EVB456'",
+  );
+  const idVehiculoInstalada = vehiculoEVB456[0]?.idVehiculo || null;
+
+  const BATERIAS = [
+    {
+      nombre: "Batería de Litio 60V 20Ah",
+      categoria: "Batería",
+      precioUnitario: 850000,
+      proveedor: "PowerCell",
+      stockActual: 6,
+      stockMinimo: 2,
+      serial: "BAT-0001",
+      modeloCompatible: "EcoMoto X1",
+      estado: "Nueva",
+      voltajeFinal: null,
+      amperajeFinal: null,
+      idVehiculo: null,
+    },
+    {
+      nombre: "Batería de Litio 72V 30Ah",
+      categoria: "Batería",
+      precioUnitario: 1200000,
+      proveedor: "PowerCell",
+      stockActual: 3,
+      stockMinimo: 2,
+      serial: "BAT-0002",
+      modeloCompatible: "EcoMoto X2 Pro",
+      estado: "Instalada",
+      voltajeFinal: 71.5,
+      amperajeFinal: 29.8,
+      idVehiculo: idVehiculoInstalada,
+    },
+  ];
+
+  for (const b of BATERIAS) {
+    const [existente] = await conn.execute(
+      "SELECT idRepuesto FROM Bateria WHERE serial = ?",
+      [b.serial],
+    );
+    if (existente.length > 0) continue;
+
+    const [res] = await conn.execute(
+      `INSERT INTO Repuesto (nombre, categoria, precioUnitario, proveedor, stockActual, stockMinimo)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        b.nombre,
+        b.categoria,
+        b.precioUnitario,
+        b.proveedor,
+        b.stockActual,
+        b.stockMinimo,
+      ],
+    );
+    const idRepuesto = res.insertId;
+
+    await conn.execute(
+      `INSERT INTO Bateria (idRepuesto, serial, modeloCompatible, estado, voltajeFinal, amperajeFinal, idVehiculo)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        idRepuesto,
+        b.serial,
+        b.modeloCompatible,
+        b.estado,
+        b.voltajeFinal,
+        b.amperajeFinal,
+        b.idVehiculo,
+      ],
+    );
+  }
+  console.log("✅ Baterías sembradas (incluida una instalada en un vehículo).");
+}
+
+// -----------------------------------------------------------------------------
+// Movimientos de Kardex de ejemplo (entradas de stock inicial + una salida).
+// -----------------------------------------------------------------------------
+async function sembrarKardex(conn) {
+  const idAdmin = await obtenerIdUsuarioPorCorreo(conn, "admin@ecobiva.com");
+
+  const [existente] = await conn.execute(
+    "SELECT idMovimiento FROM MovimientoKardex LIMIT 1",
+  );
+  if (existente.length > 0) {
+    console.log(
+      "⚠️  Ya hay movimientos de Kardex, se omite la siembra inicial.",
+    );
+    return;
+  }
+
+  const [filtro] = await conn.execute(
+    "SELECT idRepuesto FROM Repuesto WHERE nombre = 'Filtro de aceite'",
+  );
+
+  if (filtro.length > 0) {
+    await conn.execute(
+      `INSERT INTO MovimientoKardex (tipoMovimiento, cantidad, fecha, idRepuesto, idOrdenServicio, idUsuario)
+       VALUES ('entrada', 20, ?, ?, NULL, ?)`,
+      [fechaHace(20), filtro[0].idRepuesto, idAdmin],
+    );
+  }
+
+  console.log("✅ Movimientos de Kardex de ejemplo sembrados.");
+}
+
+// -----------------------------------------------------------------------------
+// PerfilTecnico + HistorialCargo del técnico de prueba.
+// -----------------------------------------------------------------------------
+async function sembrarPerfilTecnicoYHistorialCargo(conn) {
+  const idEmpleadoTecnico = await obtenerIdEmpleadoPorDocumento(
+    conn,
+    "900000002",
+  );
+  const idAdmin = await obtenerIdUsuarioPorCorreo(conn, "admin@ecobiva.com");
+
+  const [perfil] = await conn.execute(
+    "SELECT idPerfilTecnico FROM PerfilTecnico WHERE idEmpleado = ?",
+    [idEmpleadoTecnico],
+  );
+  if (perfil.length === 0) {
+    await conn.execute(
+      `INSERT INTO PerfilTecnico (idEmpleado, cargaActual, especialidad)
+       VALUES (?, 2, 'Sistemas eléctricos y baterías')`,
+      [idEmpleadoTecnico],
+    );
+  }
+
+  const [historial] = await conn.execute(
+    "SELECT idHistorial FROM HistorialCargo WHERE idEmpleado = ?",
+    [idEmpleadoTecnico],
+  );
+  if (historial.length === 0) {
+    await conn.execute(
+      `INSERT INTO HistorialCargo (idEmpleado, cargoAnterior, cargoNuevo, fechaCambio, motivo, idUsuario)
+       VALUES (?, 'Técnico Junior', 'Técnico Operativo', ?, 'Promoción por desempeño', ?)`,
+      [idEmpleadoTecnico, fechaHace(90), idAdmin],
+    );
+  }
+
+  console.log("✅ Perfil de técnico e historial de cargo sembrados.");
+}
+
+// -----------------------------------------------------------------------------
+// Órdenes de servicio + flujo completo de taller (Parte 1 y adelanto de
+// Parte 2: Diagnóstico, Evidencias, Firma y Garantía, para que el seed sirva
+// de ejemplo de punta a punta aunque esos controllers todavía no existan).
+// -----------------------------------------------------------------------------
+async function crearOrdenSiNoExiste(conn, folio, datos) {
+  const [existente] = await conn.execute(
+    "SELECT idOrden FROM OrdenServicio WHERE folio = ?",
+    [folio],
+  );
+  if (existente.length > 0)
+    return { idOrden: existente[0].idOrden, creada: false };
+
+  const [res] = await conn.execute(
+    `INSERT INTO OrdenServicio
+     (folio, fechaCreacion, estado, kilometrajeIngreso, nivelBateriaIngreso, idCliente, idVehiculo, idTecnico, idAsesor)
+     VALUES (?, ?, 'recibido', ?, ?, ?, ?, ?, ?)`,
+    [
+      folio,
+      datos.fechaCreacion,
+      datos.kilometrajeIngreso ?? null,
+      datos.nivelBateriaIngreso ?? null,
+      datos.idCliente,
+      datos.idVehiculo,
+      datos.idTecnico ?? null,
+      datos.idAsesor,
+    ],
+  );
+
+  await conn.execute(
+    `INSERT INTO HistorialEstado (estadoAnterior, estadoNuevo, fecha, usuarioId, motivo, idOrdenServicio)
+     VALUES (NULL, 'recibido', ?, ?, 'Creación de la orden', ?)`,
+    [datos.fechaCreacion, datos.idAsesor, res.insertId],
+  );
+
+  return { idOrden: res.insertId, creada: true };
+}
+
+async function avanzarEstado(
+  conn,
+  idOrden,
+  estadoAnterior,
+  estadoNuevo,
+  fecha,
+  idUsuario,
+  motivo,
+) {
+  await conn.execute("UPDATE OrdenServicio SET estado = ? WHERE idOrden = ?", [
+    estadoNuevo,
+    idOrden,
+  ]);
+  await conn.execute(
+    `INSERT INTO HistorialEstado (estadoAnterior, estadoNuevo, fecha, usuarioId, motivo, idOrdenServicio)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [estadoAnterior, estadoNuevo, fecha, idUsuario, motivo, idOrden],
+  );
+}
+
+async function sembrarOrdenesYFlujoTaller(conn) {
+  const idTecnico = await obtenerIdUsuarioPorCorreo(
+    conn,
+    "tecnico@ecobiva.com",
+  );
+  const idAsesor = await obtenerIdUsuarioPorCorreo(conn, "asesor@ecobiva.com");
+
+  const [clienteJuan] = await conn.execute(
+    "SELECT idCliente FROM Cliente WHERE documento = '1012456789'",
+  );
+  const [vehiculoJuan] = await conn.execute(
+    "SELECT idVehiculo FROM Vehiculo WHERE placa = 'EVA123'",
+  );
+  const [clienteMaria] = await conn.execute(
+    "SELECT idCliente FROM Cliente WHERE documento = '1098765432'",
+  );
+  const [vehiculoMaria] = await conn.execute(
+    "SELECT idVehiculo FROM Vehiculo WHERE placa = 'EVB456'",
+  );
+  const [clienteCarlos] = await conn.execute(
+    "SELECT idCliente FROM Cliente WHERE documento = '1076543210'",
+  );
+  const [vehiculoCarlos] = await conn.execute(
+    "SELECT idVehiculo FROM Vehiculo WHERE placa = 'EVC789'",
+  );
+
+  // ---- Orden 1: flujo completo, entregada, con diagnóstico/firma/garantía ----
+  const { idOrden: idOrden1, creada: creada1 } = await crearOrdenSiNoExiste(
+    conn,
+    "OT-000001",
+    {
+      fechaCreacion: fechaHace(15),
+      kilometrajeIngreso: 1200,
+      nivelBateriaIngreso: 45,
+      idCliente: clienteJuan[0].idCliente,
+      idVehiculo: vehiculoJuan[0].idVehiculo,
+      idTecnico,
+      idAsesor,
+    },
+  );
+
+  if (creada1) {
+    await avanzarEstado(
+      conn,
+      idOrden1,
+      "recibido",
+      "en_diagnostico",
+      fechaHace(14),
+      idTecnico,
+      "Vehículo ingresado a taller",
+    );
+    await avanzarEstado(
+      conn,
+      idOrden1,
+      "en_diagnostico",
+      "pendiente_aprobacion",
+      fechaHace(14),
+      idTecnico,
+      "Diagnóstico enviado a aprobación del cliente",
+    );
+    await avanzarEstado(
+      conn,
+      idOrden1,
+      "pendiente_aprobacion",
+      "aprobada",
+      fechaHace(13),
+      idAsesor,
+      "Cliente aprueba la reparación propuesta",
+    );
+    await avanzarEstado(
+      conn,
+      idOrden1,
+      "aprobada",
+      "en_reparacion",
+      fechaHace(13),
+      idTecnico,
+      "Inicia reparación",
+    );
+    await avanzarEstado(
+      conn,
+      idOrden1,
+      "en_reparacion",
+      "finalizada",
+      fechaHace(13),
+      idTecnico,
+      "Servicio completado",
+    );
+    await avanzarEstado(
+      conn,
+      idOrden1,
+      "finalizada",
+      "entregada",
+      fechaHace(12),
+      idAsesor,
+      "Entregado al cliente",
+    );
+
+    await conn.execute(
+      `INSERT INTO Diagnostico (checklist, tipoDiagnostico, costoDiagnostico, subtotalManoObra, subtotalRepuestos, bloqueado, fechaEnvio, idOrdenServicio)
+       VALUES (?, 'profundo', 40000, 60000, 125000, 1, ?, ?)`,
+      [
+        JSON.stringify({
+          frenos: "desgastados, requieren cambio",
+          aceite: "cambio realizado",
+          bateria: "ok, sin novedad",
+        }),
+        fechaHace(14),
+        idOrden1,
+      ],
+    );
+
+    await conn.execute(
+      `INSERT INTO Factura
+       (idOrdenServicio, numeroFactura, tipo, subtotalManoObra, subtotalRepuestos, descuento, impuestos, total, metodoPago, pagoConfirmado, fechaPago, idUsuarioCreador)
+       VALUES (?, 'FAC-000001', 'reparacion', 60000, 125000, 0, 0, 185000, 'Efectivo', 1, ?, ?)`,
+      [idOrden1, fechaHace(12), idAsesor],
+    );
+
+    await conn.execute(
+      `INSERT INTO FirmaDigital (imagenFirma, metodoCaptura, fechaCaptura, terminosAceptados, idOrden)
+       VALUES (?, 'Táctil', ?, 1, ?)`,
+      ["data:image/png;base64,SEED_PLACEHOLDER", fechaHace(12), idOrden1],
+    );
+
+    await conn.execute(
+      `INSERT INTO OrdenGarantia (ordenOrigenId, estado, costoInterno, fechaApertura, notasSeguimiento)
+       VALUES (?, 'abierta', NULL, ?, 'Cliente reporta leve ruido en el freno delantero luego de 2 semanas de uso')`,
+      [idOrden1, fechaHace(2)],
+    );
+
+    await conn.execute(
+      `INSERT INTO PuntoFidelidad (tipoMovimiento, puntos, fecha, porcentajeDescuentoAplicado, idCliente, idOrden)
+       VALUES ('acumulacion', 185, ?, NULL, ?, ?)`,
+      [fechaHace(12), clienteJuan[0].idCliente, idOrden1],
+    );
+
+    await conn.execute(
+      "UPDATE Cliente SET puntosAcumulados = puntosAcumulados + 185 WHERE idCliente = ?",
+      [clienteJuan[0].idCliente],
+    );
+  }
+
+  // ---- Orden 2: en proceso, con diagnóstico abierto y evidencia de ingreso ----
+  const { idOrden: idOrden2, creada: creada2 } = await crearOrdenSiNoExiste(
+    conn,
+    "OT-000002",
+    {
+      fechaCreacion: fechaHace(3),
+      kilometrajeIngreso: 500,
+      nivelBateriaIngreso: 60,
+      idCliente: clienteMaria[0].idCliente,
+      idVehiculo: vehiculoMaria[0].idVehiculo,
+      idTecnico,
+      idAsesor,
+    },
+  );
+
+  if (creada2) {
+    await avanzarEstado(
+      conn,
+      idOrden2,
+      "recibido",
+      "en_diagnostico",
+      fechaHace(2),
+      idTecnico,
+      "Vehículo ingresado a taller",
+    );
+
+    await conn.execute(
+      `INSERT INTO Diagnostico (checklist, tipoDiagnostico, costoDiagnostico, subtotalManoObra, subtotalRepuestos, bloqueado, fechaEnvio, idOrdenServicio)
+       VALUES (?, 'superficial', 0, 40000, 0, 0, NULL, ?)`,
+      [
+        JSON.stringify({
+          bateria: "revisar celdas por sospecha de descarga irregular",
+          motor: "sin novedad",
+        }),
+        idOrden2,
+      ],
+    );
+
+    const [evidencia] = await conn.execute(
+      `INSERT INTO EvidenciaIngreso (observaciones, fechaRegistro, idVehiculo)
+       VALUES ('Rayón leve en el guardabarros delantero, se deja constancia antes de intervenir.', ?, ?)`,
+      [fechaHace(3), vehiculoMaria[0].idVehiculo],
+    );
+
+    await conn.execute(
+      `INSERT INTO EvidenciaFoto (idEvidencia, url) VALUES (?, ?)`,
+      [
+        evidencia.insertId,
+        "https://storage.ecobiva.com/evidencias/evb456-ingreso-1.jpg",
+      ],
+    );
+  }
+
+  // ---- Orden 3: recién abierta, sin técnico asignado todavía ----
+  await crearOrdenSiNoExiste(conn, "OT-000003", {
+    fechaCreacion: fechaHace(0),
+    kilometrajeIngreso: 8300,
+    nivelBateriaIngreso: 20,
+    idCliente: clienteCarlos[0].idCliente,
+    idVehiculo: vehiculoCarlos[0].idVehiculo,
+    idTecnico: null,
+    idAsesor,
+  });
+
+  console.log(
+    "✅ Órdenes de servicio y flujo de taller (diagnóstico, evidencia, firma, garantía, puntos) sembrados.",
+  );
+
+  return { idOrden1, idOrden2 };
+}
+
+// -----------------------------------------------------------------------------
+// Registro de horas + una nómina calculada a partir de ese registro.
+// -----------------------------------------------------------------------------
+async function sembrarRegistroHorasYNomina(conn, ordenes) {
+  const idEmpleadoTecnico = await obtenerIdEmpleadoPorDocumento(
+    conn,
+    "900000002",
+  );
+
+  const [existente] = await conn.execute(
+    "SELECT idRegistro FROM RegistroHoras WHERE idEmpleado = ?",
+    [idEmpleadoTecnico],
+  );
+
+  if (existente.length === 0) {
+    const registros = [
+      { fecha: fechaHace(14), horas: 4, idOrden: ordenes?.idOrden1 || null },
+      { fecha: fechaHace(13), horas: 3, idOrden: ordenes?.idOrden1 || null },
+      { fecha: fechaHace(2), horas: 5, idOrden: ordenes?.idOrden2 || null },
+      { fecha: fechaHace(1), horas: 6, idOrden: null },
+    ];
+
+    for (const r of registros) {
+      await conn.execute(
+        `INSERT INTO RegistroHoras (idEmpleado, fecha, horasTrabajadas, idOrdenServicio)
+         VALUES (?, ?, ?, ?)`,
+        [idEmpleadoTecnico, r.fecha, r.horas, r.idOrden],
+      );
+    }
+  }
+
+  const [tecnico] = await conn.execute(
+    "SELECT tarifaHora FROM Empleado WHERE idEmpleado = ?",
+    [idEmpleadoTecnico],
+  );
+  const tarifaHora = Number(tecnico[0].tarifaHora);
+
+  const periodoInicio = fechaHace(14).toISOString().slice(0, 10);
+  const periodoFin = fechaHace(0).toISOString().slice(0, 10);
+
+  const [nominaExistente] = await conn.execute(
+    "SELECT idNomina FROM Nomina WHERE idEmpleado = ? AND periodoInicio = ? AND periodoFin = ?",
+    [idEmpleadoTecnico, periodoInicio, periodoFin],
+  );
+
+  if (nominaExistente.length === 0) {
+    const [suma] = await conn.execute(
+      "SELECT IFNULL(SUM(horasTrabajadas),0) AS totalHoras FROM RegistroHoras WHERE idEmpleado = ? AND fecha BETWEEN ? AND ?",
+      [idEmpleadoTecnico, periodoInicio, periodoFin],
+    );
+    const totalHoras = Number(suma[0].totalHoras);
+    const totalPagar = totalHoras * tarifaHora;
+
+    await conn.execute(
+      `INSERT INTO Nomina (idEmpleado, periodoInicio, periodoFin, totalHoras, tarifaHoraAplicada, totalPagar)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        idEmpleadoTecnico,
+        periodoInicio,
+        periodoFin,
+        totalHoras,
+        tarifaHora,
+        totalPagar,
+      ],
+    );
+  }
+
+  console.log("✅ Registro de horas y nómina de ejemplo sembrados.");
+}
+
+// -----------------------------------------------------------------------------
+// Términos de garantía (catálogo legal) y recordatorios preventivos.
+// -----------------------------------------------------------------------------
+const TERMINOS_GARANTIA = [
+  {
+    categoria: "Batería",
+    textoLegal:
+      "La batería cuenta con garantía de fábrica por defectos de manufactura, sujeta a uso adecuado y carga con cargador original.",
+    plazoGarantiaDias: 365,
+    version: "v1",
+  },
+  {
+    categoria: "Mano de obra",
+    textoLegal:
+      "La mano de obra realizada en taller cuenta con garantía de 30 días sobre el servicio prestado; no cubre daños por mal uso posterior.",
+    plazoGarantiaDias: 30,
+    version: "v1",
+  },
+  {
+    categoria: "Repuestos electrónicos",
+    textoLegal:
+      "Los repuestos electrónicos instalados cuentan con la garantía del proveedor, sujeta a las condiciones del fabricante.",
+    plazoGarantiaDias: 90,
+    version: "v1",
+  },
+];
+
+async function sembrarTerminosGarantia(conn) {
+  for (const t of TERMINOS_GARANTIA) {
+    const [existente] = await conn.execute(
+      "SELECT idTermino FROM TerminoGarantia WHERE categoria = ? AND version = ?",
+      [t.categoria, t.version],
+    );
+    if (existente.length > 0) continue;
+
+    await conn.execute(
+      `INSERT INTO TerminoGarantia (categoria, textoLegal, plazoGarantiaDias, version, vigente)
+       VALUES (?, ?, ?, ?, 1)`,
+      [t.categoria, t.textoLegal, t.plazoGarantiaDias, t.version],
+    );
+  }
+  console.log("✅ Términos de garantía sembrados.");
+}
+
+async function sembrarRecordatorios(conn) {
+  const [clienteJuan] = await conn.execute(
+    "SELECT idCliente FROM Cliente WHERE documento = '1012456789'",
+  );
+  const [vehiculoJuan] = await conn.execute(
+    "SELECT idVehiculo FROM Vehiculo WHERE placa = 'EVA123'",
+  );
+  const [clienteCarlos] = await conn.execute(
+    "SELECT idCliente FROM Cliente WHERE documento = '1076543210'",
+  );
+  const [vehiculoCarlos2] = await conn.execute(
+    "SELECT idVehiculo FROM Vehiculo WHERE placa = 'EVC790'",
+  );
+
+  const [existente] = await conn.execute(
+    "SELECT idRecordatorio FROM RecordatorioPreventivo LIMIT 1",
+  );
+  if (existente.length > 0) {
+    console.log(
+      "⚠️  Ya hay recordatorios preventivos, se omite la siembra inicial.",
+    );
+    return;
+  }
+
+  await conn.execute(
+    `INSERT INTO RecordatorioPreventivo (canal, fechaEnvio, enviado, idCliente, idVehiculo)
+     VALUES ('WhatsApp', ?, 1, ?, ?)`,
+    [fechaHace(30), clienteJuan[0].idCliente, vehiculoJuan[0].idVehiculo],
+  );
+
+  const fechaFutura = new Date();
+  fechaFutura.setDate(fechaFutura.getDate() + 15);
+
+  await conn.execute(
+    `INSERT INTO RecordatorioPreventivo (canal, fechaEnvio, enviado, idCliente, idVehiculo)
+     VALUES ('SMS', ?, 0, ?, ?)`,
+    [fechaFutura, clienteCarlos[0].idCliente, vehiculoCarlos2[0].idVehiculo],
+  );
+
+  console.log("✅ Recordatorios preventivos sembrados.");
+}
+
 async function seed() {
   const connection = await mysql.createConnection({
     host: process.env.DB_HOST,
@@ -294,6 +1124,17 @@ async function seed() {
     for (const datos of USUARIOS_PRUEBA) {
       await sembrarUsuarioDePrueba(connection, datos);
     }
+
+    await sembrarRepuestos(connection);
+    await sembrarAlertasStock(connection);
+    await sembrarClientesYVehiculos(connection);
+    await sembrarBaterias(connection);
+    await sembrarKardex(connection);
+    await sembrarPerfilTecnicoYHistorialCargo(connection);
+    const ordenes = await sembrarOrdenesYFlujoTaller(connection);
+    await sembrarRegistroHorasYNomina(connection, ordenes);
+    await sembrarTerminosGarantia(connection);
+    await sembrarRecordatorios(connection);
 
     await connection.commit();
 

@@ -8,13 +8,14 @@ import StatusBadge from "../../components/StatusBadge/StatusBadge";
 import SearchBar from "../../components/SearchBar/SearchBar";
 import DetailModal from "../../components/DetailModal/DetailModal";
 import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
-import OrdenDetail from "../../components/OrdenDetail/OrdenDetail";
+import OrdenDetail, { ESTADO_LABELS, ESTADO_VARIANT } from "../../components/OrdenDetail/OrdenDetail";
 import OrdenModal from "../../components/OrdenModal/OrdenModal";
 import {
   obtenerOrdenes,
   obtenerOrden,
   crearOrden,
   actualizarOrden,
+  cambiarEstadoOrden,
   eliminarOrden,
 } from "../../services/ordenService";
 
@@ -44,8 +45,8 @@ export default function Ordenes() {
 
   const guardarOrden = async (orden) => {
     try {
-      if (ordenEditar?.id) {
-        await actualizarOrden(ordenEditar.id, orden);
+      if (ordenEditar?.idOrden) {
+        await actualizarOrden(ordenEditar.idOrden, orden);
       } else {
         await crearOrden(orden);
       }
@@ -53,7 +54,7 @@ export default function Ordenes() {
       await cargarOrdenes();
     } catch (error) {
       console.error(error);
-      alert("No fue posible guardar la orden.");
+      alert(error?.response?.data?.error || "No fue posible guardar la orden.");
     }
   };
 
@@ -62,26 +63,74 @@ export default function Ordenes() {
     setOrdenEditar(null);
   };
 
+  const verDetalle = async (orden) => {
+    try {
+      const detalle = await obtenerOrden(orden.idOrden);
+      setOrdenSeleccionada(detalle);
+      setDetalleOpen(true);
+    } catch (error) {
+      console.error(error);
+      alert("No fue posible obtener la orden.");
+    }
+  };
+
+  const cambiarEstado = async (idOrden, estado, motivo) => {
+    try {
+      await cambiarEstadoOrden(idOrden, estado, motivo);
+      await cargarOrdenes();
+      const detalle = await obtenerOrden(idOrden);
+      setOrdenSeleccionada(detalle);
+    } catch (error) {
+      console.error(error);
+      alert(
+        error?.response?.data?.error ||
+          "No fue posible cambiar el estado de la orden.",
+      );
+    }
+  };
+
+  const refrescarOrdenSeleccionada = async () => {
+    try {
+      await cargarOrdenes();
+      if (ordenSeleccionada?.idOrden) {
+        const detalle = await obtenerOrden(ordenSeleccionada.idOrden);
+        setOrdenSeleccionada(detalle);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const confirmarEliminarOrden = async () => {
     try {
-      if (!ordenEliminar?.id) {
+      if (!ordenEliminar?.idOrden) {
         throw new Error("No hay orden seleccionada");
       }
-      await eliminarOrden(ordenEliminar.id);
+      const resultado = await eliminarOrden(ordenEliminar.idOrden);
       setConfirmDelete(false);
       setOrdenEliminar(null);
       await cargarOrdenes();
+      if (resultado?.mensaje) alert(resultado.mensaje);
     } catch (error) {
       console.error(error);
-      alert("No fue posible eliminar la orden.");
+      alert(
+        error?.response?.data?.error || "No fue posible eliminar la orden.",
+      );
     }
   };
 
   const ordenesFiltradas = ordenes.filter((orden) =>
-    [orden.id, orden.cliente, orden.vehiculo, orden.tecnico, orden.servicio, orden.estado]
+    [
+      orden.folio,
+      orden.clienteNombre,
+      orden.vehiculoPlaca,
+      orden.tecnicoNombre,
+      orden.asesorNombre,
+      orden.estado,
+    ]
       .join(" ")
       .toLowerCase()
-      .includes(busqueda.toLowerCase())
+      .includes(busqueda.toLowerCase()),
   );
 
   return (
@@ -117,43 +166,39 @@ export default function Ordenes() {
           <table>
             <thead>
               <tr>
-                <th>OT</th>
+                <th>Folio</th>
                 <th>Cliente</th>
                 <th>Vehículo</th>
-                <th>Técnico</th>
+                <th>Tecnico</th>
                 <th>Estado</th>
                 <th>Fecha</th>
-                <th>Total</th>
                 <th>Acciones</th>
               </tr>
             </thead>
 
             <tbody>
               {ordenesFiltradas.map((orden) => (
-                <tr key={orden.id || `${orden.cliente}-${orden.fecha}`}>
+                <tr key={orden.idOrden}>
                   <td>
-                    <strong>{orden.id}</strong>
+                    <strong>{orden.folio}</strong>
                   </td>
-                  <td>{orden.cliente}</td>
-                  <td>{orden.vehiculo}</td>
-                  <td>{orden.tecnico}</td>
+                  <td>{orden.clienteNombre}</td>
+                  <td>{orden.vehiculoPlaca}</td>
+                  <td>{orden.tecnicoNombre || "Sin asignar"}</td>
                   <td>
-                    <StatusBadge status={orden.estado} />
+                    <StatusBadge
+                      status={ESTADO_LABELS[orden.estado] || orden.estado}
+                      variant={ESTADO_VARIANT[orden.estado]}
+                    />
                   </td>
-                  <td>{orden.fecha}</td>
-                  <td>{orden.total}</td>
+                  <td>
+                    {orden.fechaCreacion
+                      ? new Date(orden.fechaCreacion).toLocaleDateString()
+                      : "-"}
+                  </td>
                   <td>
                     <ActionButtons
-                      onView={async () => {
-                        try {
-                          const detalle = await obtenerOrden(orden.id);
-                          setOrdenSeleccionada(detalle);
-                          setDetalleOpen(true);
-                        } catch (error) {
-                          console.error(error);
-                          alert("No fue posible obtener la orden.");
-                        }
-                      }}
+                      onView={() => verDetalle(orden)}
                       onEdit={() => {
                         setOrdenEditar(orden);
                         setModalOpen(true);
@@ -183,13 +228,17 @@ export default function Ordenes() {
         title="Información de la Orden"
         onClose={() => setDetalleOpen(false)}
       >
-        <OrdenDetail orden={ordenSeleccionada} />
+        <OrdenDetail
+          orden={ordenSeleccionada}
+          onCambiarEstado={cambiarEstado}
+          onOrdenActualizada={refrescarOrdenSeleccionada}
+        />
       </DetailModal>
 
       <ConfirmModal
         open={confirmDelete}
         title="Eliminar Orden"
-        message="¿Está seguro de eliminar esta orden? Esta acción eliminará el registro permanentemente."
+        message="¿Está seguro de eliminar esta orden? Si ya tiene registros asociados (diagnóstico, evidencias, etc.) se cancelará en su lugar."
         onClose={() => setConfirmDelete(false)}
         onConfirm={confirmarEliminarOrden}
       />

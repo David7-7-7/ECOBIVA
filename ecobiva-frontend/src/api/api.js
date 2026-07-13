@@ -48,6 +48,7 @@ export const usuariosApi = {
   crear: (payload) => api.post("/usuarios", payload),
   editar: (id, payload) => api.put(`/usuarios/${id}`, payload),
   desactivar: (id) => api.delete(`/usuarios/${id}`),
+  activar: (id) => api.patch(`/usuarios/${id}/activar`),
 };
 
 // ---------- Roles ----------
@@ -59,6 +60,9 @@ export const rolesApi = {
 export const perfilApi = {
   cambiarPassword: (passwordActual, nuevaPassword) =>
     api.put("/perfil/password", { passwordActual, nuevaPassword }),
+  miPerfil: () => api.get("/perfil/me"),
+  actualizarMiPerfil: (telefono, correo) =>
+    api.put("/perfil/me", { telefono, correo }),
 };
 
 // ---------- Permisos (RBAC) ----------
@@ -86,6 +90,16 @@ export const empleadosApi = {
   reactivar: (id) => api.patch(`/empleados/${id}/reactivar`),
   crearUsuario: (id, payload) =>
     api.post(`/empleados/${id}/crear-usuario`, payload),
+};
+
+// ---------- Técnicos ----------
+export const tecnicosApi = {
+  listar: () => api.get("/tecnicos"),
+  obtenerPorId: (id) => api.get(`/tecnicos/${id}`),
+  crear: (payload) => api.post("/tecnicos", payload),
+  editar: (id, payload) => api.put(`/tecnicos/${id}`, payload),
+  desactivar: (id) => api.patch(`/tecnicos/${id}/desactivar`),
+  reactivar: (id) => api.patch(`/tecnicos/${id}/reactivar`),
 };
 
 // ---------- Historial de Cargo (RRHH) ----------

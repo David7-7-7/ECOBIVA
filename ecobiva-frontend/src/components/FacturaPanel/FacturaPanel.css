@@ -1,0 +1,41 @@
+.facturaMetodoPago {
+  max-width: 260px;
+  margin-top: 16px;
+}
+
+.btnPagar {
+  background: #dcfce7;
+  color: #15803d;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.btnPagar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.facturaNueva {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.facturaNueva h4 {
+  margin-bottom: 16px;
+  color: #1e293b;
+}
+
+.facturaTotal {
+  margin: 16px 0;
+  font-size: 15px;
+  color: #334155;
+}
+
+.facturaTotal strong {
+  color: #15803d;
+}

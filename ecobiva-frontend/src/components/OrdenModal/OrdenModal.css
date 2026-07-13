@@ -50,6 +50,18 @@
   color: #334155;
 }
 
+.ordenModalCheckbox {
+  display: flex;
+  align-items: center;
+}
+
+.ordenModalCheckbox label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
 @media (max-width: 900px) {
   .ordenModalGrid {
     grid-template-columns: 1fr;

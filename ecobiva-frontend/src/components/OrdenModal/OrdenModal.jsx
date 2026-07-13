@@ -3,30 +3,17 @@ import Modal from "../Modal/Modal";
 import Input from "../Input/Input";
 import Button from "../Button/Button";
 import { obtenerClientes, obtenerCliente } from "../../services/clienteService";
+import { listarUsuarios } from "../../services/usuarioService";
+import { listarTecnicos } from "../../services/tecnicoService";
 import "./OrdenModal.css";
 
-const ESTADOS = ["Pendiente", "En Taller", "Finalizado", "Entregado"];
-const PRIORIDADES = ["Baja", "Media", "Alta"];
-
-const estadoValue = (value) => value || "Pendiente";
-const prioridadValue = (value) => value || "Media";
-
 const inicializarOrden = () => ({
-  clienteId: "",
-  vehiculoId: "",
-  cliente: "",
-  vehiculo: "",
-  placa: "",
-  marca: "",
-  modelo: "",
-  tecnico: "",
-  servicio: "",
-  fecha: "",
-  entrega: "",
-  estado: "Pendiente",
-  prioridad: "Media",
-  total: "",
-  observaciones: "",
+  idCliente: "",
+  idVehiculo: "",
+  idTecnico: "",
+  idAsesor: "",
+  kilometrajeIngreso: "",
+  nivelBateriaIngreso: "",
 });
 
 export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
@@ -34,12 +21,18 @@ export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
   const [errores, setErrores] = useState({});
   const [clientes, setClientes] = useState([]);
   const [vehiculos, setVehiculos] = useState([]);
+  const [tecnicos, setTecnicos] = useState([]);
+  const [asesores, setAsesores] = useState([]);
 
-  const clienteSeleccionado = clientes.find((cliente) => String(cliente.idCliente) === String(orden.clienteId));
+  const clienteSeleccionado = clientes.find(
+    (cliente) => String(cliente.idCliente) === String(orden.idCliente),
+  );
 
   useEffect(() => {
     if (!open) return;
     cargarClientes();
+    cargarUsuarios();
+    cargarTecnicos();
   }, [open]);
 
   useEffect(() => {
@@ -47,26 +40,18 @@ export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
 
     if (ordenEditar) {
       setOrden({
-        clienteId: ordenEditar.clienteId || "",
-        vehiculoId: ordenEditar.vehiculoId || "",
-        cliente: ordenEditar.cliente || "",
-        vehiculo: ordenEditar.vehiculo || "",
-        placa: ordenEditar.placa || "",
-        marca: ordenEditar.marca || "",
-        modelo: ordenEditar.modelo || "",
-        tecnico: ordenEditar.tecnico || "",
-        servicio: ordenEditar.servicio || "",
-        fecha: ordenEditar.fecha || "",
-        entrega: ordenEditar.entrega || "",
-        estado: estadoValue(ordenEditar.estado),
-        prioridad: prioridadValue(ordenEditar.prioridad),
-        total: ordenEditar.total || "",
-        observaciones: ordenEditar.observaciones || "",
+        idCliente: ordenEditar.idCliente || "",
+        idVehiculo: ordenEditar.idVehiculo || "",
+        idTecnico: ordenEditar.idTecnico || "",
+        idAsesor: ordenEditar.idAsesor || "",
+        kilometrajeIngreso: ordenEditar.kilometrajeIngreso ?? "",
+        nivelBateriaIngreso: ordenEditar.nivelBateriaIngreso ?? "",
       });
 
-      if (ordenEditar.clienteId) {
-        cargarClienteYVehiculos(ordenEditar.clienteId, ordenEditar.vehiculoId);
+      if (ordenEditar.idCliente) {
+        cargarVehiculosDeCliente(ordenEditar.idCliente);
       }
+      setErrores({});
       return;
     }
 
@@ -85,7 +70,37 @@ export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
     }
   };
 
-  const cargarClienteYVehiculos = async (idCliente, vehiculoId = "") => {
+  const cargarUsuarios = async () => {
+    try {
+      const data = await listarUsuarios();
+      const usuarios = data || [];
+      setAsesores(usuarios.filter((u) => (u.roles || []).includes("Asesor")));
+    } catch (error) {
+      console.error(error);
+      // No bloqueamos el formulario si no se pudo cargar la lista de usuarios;
+      // simplemente el select de asesor quedará vacío.
+    }
+  };
+
+  const cargarTecnicos = async () => {
+    try {
+      const data = await listarTecnicos();
+      const tecnicosData = data || [];
+      // Solo técnicos activos y con cuenta de usuario (Orden.idTecnico
+      // referencia Usuario.idUsuario, así que sin cuenta no se pueden asignar).
+      setTecnicos(
+        tecnicosData.filter(
+          (t) => Number(t.estadoLaboral) === 1 && t.idUsuario,
+        ),
+      );
+    } catch (error) {
+      console.error(error);
+      // No bloqueamos el formulario si no se pudo cargar la lista de técnicos;
+      // simplemente el select de técnico quedará vacío.
+    }
+  };
+
+  const cargarVehiculosDeCliente = async (idCliente) => {
     if (!idCliente) {
       setVehiculos([]);
       return;
@@ -93,88 +108,16 @@ export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
 
     try {
       const cliente = await obtenerCliente(idCliente);
-      const listaVehiculos = cliente.vehiculos || [];
-      setVehiculos(listaVehiculos);
-      setOrden((prev) => ({
-        ...prev,
-        cliente: cliente.nombre || prev.cliente,
-        clienteId: idCliente,
-      }));
-
-      if (vehiculoId) {
-        const vehiculo = listaVehiculos.find(
-          (item) => String(item.idVehiculo || item.id) === String(vehiculoId)
-        );
-        if (vehiculo) {
-          setVehiculos(listaVehiculos);
-          setOrden((prev) => ({
-            ...prev,
-            vehiculoId,
-            vehiculo: `${vehiculo.marca || ""} ${vehiculo.modelo || ""}`.trim() || vehiculo.placa || "",
-            placa: vehiculo.placa || "",
-            marca: vehiculo.marca || "",
-            modelo: vehiculo.modelo || "",
-          }));
-        }
-      }
+      setVehiculos(cliente.vehiculos || []);
     } catch (error) {
       console.error(error);
       alert("No se pudieron cargar los vehículos del cliente.");
     }
   };
 
-  const seleccionarCliente = async (clienteId) => {
-    if (!clienteId) {
-      setOrden((prev) => ({
-        ...prev,
-        clienteId: "",
-        cliente: "",
-        vehiculoId: "",
-        vehiculo: "",
-        placa: "",
-        marca: "",
-        modelo: "",
-      }));
-      setVehiculos([]);
-      return;
-    }
-
-    await cargarClienteYVehiculos(clienteId);
-    setOrden((prev) => ({
-      ...prev,
-      clienteId,
-      vehiculoId: "",
-      vehiculo: "",
-      placa: "",
-      marca: "",
-      modelo: "",
-    }));
-  };
-
-  const seleccionarVehiculo = (vehiculoId) => {
-    const vehiculo = vehiculos.find(
-      (item) => String(item.idVehiculo || item.id) === String(vehiculoId)
-    );
-    if (!vehiculo) {
-      setOrden((prev) => ({
-        ...prev,
-        vehiculoId: "",
-        vehiculo: "",
-        placa: "",
-        marca: "",
-        modelo: "",
-      }));
-      return;
-    }
-
-    setOrden((prev) => ({
-      ...prev,
-      vehiculoId,
-      vehiculo: `${vehiculo.marca || ""} ${vehiculo.modelo || ""}`.trim() || vehiculo.placa || "",
-      placa: vehiculo.placa || "",
-      marca: vehiculo.marca || "",
-      modelo: vehiculo.modelo || "",
-    }));
+  const seleccionarCliente = async (idCliente) => {
+    setOrden((prev) => ({ ...prev, idCliente, idVehiculo: "" }));
+    await cargarVehiculosDeCliente(idCliente);
   };
 
   if (!open) return null;
@@ -182,19 +125,30 @@ export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
   const validar = async () => {
     const nuevo = {};
 
-    if (!orden.clienteId) nuevo.cliente = "Seleccione el cliente.";
-    if (!orden.vehiculoId) nuevo.vehiculo = "Seleccione el vehículo.";
-    if (!orden.placa.trim()) nuevo.placa = "No se encontró la placa del vehículo.";
-    if (!orden.tecnico.trim()) nuevo.tecnico = "Ingrese el técnico.";
-    if (!orden.servicio.trim()) nuevo.servicio = "Ingrese el servicio.";
-    if (!orden.fecha.trim()) nuevo.fecha = "Ingrese la fecha.";
-    if (!orden.total.toString().trim()) nuevo.total = "Ingrese el valor total.";
+    if (!orden.idCliente) nuevo.idCliente = "Seleccione el cliente.";
+    if (!orden.idVehiculo) nuevo.idVehiculo = "Seleccione el vehículo.";
+    if (!orden.idAsesor) nuevo.idAsesor = "Seleccione el asesor responsable.";
 
     setErrores(nuevo);
 
     if (Object.keys(nuevo).length > 0) return;
 
-    await onSave(orden);
+    const payload = {
+      idCliente: Number(orden.idCliente),
+      idVehiculo: Number(orden.idVehiculo),
+      idTecnico: orden.idTecnico ? Number(orden.idTecnico) : null,
+      idAsesor: Number(orden.idAsesor),
+      kilometrajeIngreso:
+        orden.kilometrajeIngreso === ""
+          ? null
+          : Number(orden.kilometrajeIngreso),
+      nivelBateriaIngreso:
+        orden.nivelBateriaIngreso === ""
+          ? null
+          : Number(orden.nivelBateriaIngreso),
+    };
+
+    await onSave(payload);
     onClose();
   };
 
@@ -208,15 +162,17 @@ export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
       <div className="ordenModalBody">
         {ordenEditar && (
           <div className="ordenModalId">
-            Orden: <strong>{ordenEditar.id || ordenEditar.idOrden || "-"}</strong>
+            Orden: <strong>{ordenEditar.folio || "-"}</strong>
           </div>
         )}
 
         <div className="ordenModalGrid">
           <div className="inputGroup">
-            <label>Cliente</label>
+            <label>
+              Cliente <span>*</span>
+            </label>
             <select
-              value={orden.clienteId}
+              value={orden.idCliente}
               onChange={(e) => seleccionarCliente(e.target.value)}
             >
               <option value="">Seleccione...</option>
@@ -226,29 +182,38 @@ export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
                 </option>
               ))}
             </select>
-            {errores.cliente && <p className="inputError">{errores.cliente}</p>}
+            {errores.idCliente && (
+              <p className="inputError">{errores.idCliente}</p>
+            )}
           </div>
 
           <div className="inputGroup">
-            <label>Vehículo</label>
+            <label>
+              Vehículo <span>*</span>
+            </label>
             <select
-              value={orden.vehiculoId}
-              onChange={(e) => seleccionarVehiculo(e.target.value)}
-              disabled={!orden.clienteId || vehiculos.length === 0}
+              value={orden.idVehiculo}
+              onChange={(e) =>
+                setOrden({ ...orden, idVehiculo: e.target.value })
+              }
+              disabled={!orden.idCliente || vehiculos.length === 0}
             >
               <option value="">Seleccione...</option>
               {vehiculos.map((vehiculo) => (
-                <option key={vehiculo.idVehiculo || vehiculo.id} value={vehiculo.idVehiculo || vehiculo.id}>
+                <option key={vehiculo.idVehiculo} value={vehiculo.idVehiculo}>
                   {vehiculo.placa} - {vehiculo.marca} {vehiculo.modelo}
                 </option>
               ))}
             </select>
-            {errores.vehiculo && <p className="inputError">{errores.vehiculo}</p>}
+            {errores.idVehiculo && (
+              <p className="inputError">{errores.idVehiculo}</p>
+            )}
           </div>
 
           <div className="ordenModalInfo">
             <p>
-              <strong>Documento:</strong> {clienteSeleccionado?.documento || "-"}
+              <strong>Documento:</strong>{" "}
+              {clienteSeleccionado?.documento || "-"}
             </p>
             <p>
               <strong>Teléfono:</strong> {clienteSeleccionado?.telefono || "-"}
@@ -258,95 +223,62 @@ export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
             </p>
           </div>
 
-          <Input
-            label="Técnico"
-            required
-            value={orden.tecnico}
-            error={errores.tecnico}
-            onChange={(e) => setOrden({ ...orden, tecnico: e.target.value })}
-          />
-
-          <Input
-            label="Servicio"
-            required
-            value={orden.servicio}
-            error={errores.servicio}
-            onChange={(e) => setOrden({ ...orden, servicio: e.target.value })}
-          />
-
           <div className="inputGroup">
-            <label>Estado</label>
+            <label>
+              Asesor <span>*</span>
+            </label>
             <select
-              value={orden.estado}
-              onChange={(e) => setOrden({ ...orden, estado: e.target.value })}
+              value={orden.idAsesor}
+              onChange={(e) => setOrden({ ...orden, idAsesor: e.target.value })}
             >
-              {ESTADOS.map((estado) => (
-                <option key={estado} value={estado}>
-                  {estado}
+              <option value="">Seleccione...</option>
+              {asesores.map((usuario) => (
+                <option key={usuario.idUsuario} value={usuario.idUsuario}>
+                  {usuario.nombreEmpleado || usuario.correo}
                 </option>
               ))}
             </select>
+            {errores.idAsesor && (
+              <p className="inputError">{errores.idAsesor}</p>
+            )}
           </div>
 
           <div className="inputGroup">
-            <label>Prioridad</label>
+            <label>Tecnico asignado</label>
             <select
-              value={orden.prioridad}
-              onChange={(e) => setOrden({ ...orden, prioridad: e.target.value })}
+              value={orden.idTecnico}
+              onChange={(e) =>
+                setOrden({ ...orden, idTecnico: e.target.value })
+              }
             >
-              {PRIORIDADES.map((prioridad) => (
-                <option key={prioridad} value={prioridad}>
-                  {prioridad}
+              <option value="">Sin asignar</option>
+              {tecnicos.map((tecnico) => (
+                <option key={tecnico.idUsuario} value={tecnico.idUsuario}>
+                  {tecnico.nombre} — Carga: {tecnico.cargaActual}/
+                  {tecnico.capacidadMaxima}
                 </option>
               ))}
             </select>
           </div>
 
           <Input
-            label="Fecha"
-            type="date"
-            required
-            value={orden.fecha}
-            error={errores.fecha}
-            onChange={(e) => setOrden({ ...orden, fecha: e.target.value })}
-          />
-
-          <Input
-            label="Entrega"
-            type="date"
-            value={orden.entrega}
-            onChange={(e) => setOrden({ ...orden, entrega: e.target.value })}
-          />
-
-          <Input
-            label="Total"
+            label="Kilometraje de ingreso"
             type="number"
-            required
-            value={orden.total}
-            error={errores.total}
-            onChange={(e) => setOrden({ ...orden, total: e.target.value })}
+            value={orden.kilometrajeIngreso}
+            onChange={(e) =>
+              setOrden({ ...orden, kilometrajeIngreso: e.target.value })
+            }
           />
 
-          <div className="ordenModalFull">
-            <label>Observaciones</label>
-            <textarea
-              value={orden.observaciones}
-              onChange={(e) => setOrden({ ...orden, observaciones: e.target.value })}
-              placeholder="Observaciones..."
-            />
-          </div>
+          <Input
+            label="Nivel de batería de ingreso (%)"
+            type="number"
+            value={orden.nivelBateriaIngreso}
+            onChange={(e) =>
+              setOrden({ ...orden, nivelBateriaIngreso: e.target.value })
+            }
+          />
 
-          <div className="ordenModalInfo">
-            <p>
-              <strong>Placa:</strong> {orden.placa || "-"}
-            </p>
-            <p>
-              <strong>Marca:</strong> {orden.marca || "-"}
-            </p>
-            <p>
-              <strong>Modelo:</strong> {orden.modelo || "-"}
-            </p>
-          </div>
         </div>
 
         <div className="ordenModalFooter">

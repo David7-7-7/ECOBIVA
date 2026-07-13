@@ -21,7 +21,7 @@ async function obtenerPorId(idCliente) {
 async function obtenerVehiculosPorCliente(idCliente) {
   const [rows] = await pool.execute(
     `SELECT idVehiculo, placa, marca, modelo, anio, serialMotor, tipoVehiculo, especificacionesBateria, idCliente
-     FROM vehiculo
+     FROM Vehiculo
      WHERE idCliente = ?`,
     [idCliente],
   );
@@ -72,7 +72,7 @@ async function actualizar(idCliente, cliente) {
 
 async function eliminar(idCliente) {
   // Remueve vehículos asociados primero para evitar errores de clave foránea.
-  await pool.execute(`DELETE FROM vehiculo WHERE idCliente = ?`, [idCliente]);
+  await pool.execute(`DELETE FROM Vehiculo WHERE idCliente = ?`, [idCliente]);
 
   await pool.execute(`DELETE FROM Cliente WHERE idCliente = ?`, [idCliente]);
 }

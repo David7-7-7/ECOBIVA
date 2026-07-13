@@ -20,8 +20,6 @@ import Configuracion from "../pages/Configuracion/Configuracion";
 import Usuarios from "../pages/Usuarios/Usuarios";
 import Permisos from "../pages/Permisos/Permisos";
 import Auditoria from "../pages/Auditoria/Auditoria";
-import CambiarPassword from "../pages/Perfil/CambiarPassword";
-
 // RRHH
 import Empleados from "../pages/Empleados/Empleados";
 import HistorialCargo from "../pages/HistorialCargo/HistorialCargo";
@@ -57,8 +55,6 @@ export default function AppRoutes() {
           <Route path="/reportes" element={<Reportes />} />
 
           <Route path="/configuracion" element={<Configuracion />} />
-
-          <Route path="/perfil" element={<CambiarPassword />} />
         </Route>
       </Route>
 

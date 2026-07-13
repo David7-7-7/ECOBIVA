@@ -1,116 +1,214 @@
 import "./TecnicoModal.css";
 
+import { useEffect, useState } from "react";
+
 import Modal from "../Modal/Modal";
-import TecnicoModal from "../../components/TecnicoModal/TecnicoModal";
+import Input from "../Input/Input";
+import Button from "../Button/Button";
 
-const [abrirModal, setAbrirModal] = useState(false);
+import { crearTecnico, editarTecnico } from "../../services/tecnicoService";
 
-export default function TecnicoModal({ open, onClose }) {
+const VACIO = {
+  nombre: "",
+  documento: "",
+  fechaIngreso: "",
+  tarifaHora: "",
+  especialidad: "",
+  capacidadMaxima: "",
+};
 
-    if (!open) return null;
+export default function TecnicoModal({
+  open,
+  tecnico,
+  editando,
+  onClose,
+  onGuardado,
+}) {
+  const [form, setForm] = useState(VACIO);
+  const [errores, setErrores] = useState({});
+  const [error, setError] = useState("");
+  const [guardando, setGuardando] = useState(false);
 
-    return (
+  useEffect(() => {
+    if (!open) return;
 
-        <Modal
-            open={open}
-            onClose={onClose}
-            title="Nuevo Técnico"
-        >
+    if (editando && tecnico) {
+      setForm({
+        nombre: tecnico.nombre || "",
+        documento: tecnico.documento || "",
+        fechaIngreso: tecnico.fechaIngreso
+          ? String(tecnico.fechaIngreso).slice(0, 10)
+          : "",
+        tarifaHora: tecnico.tarifaHora ?? "",
+        especialidad: tecnico.especialidad || "",
+        capacidadMaxima: tecnico.capacidadMaxima ?? "",
+      });
+    } else {
+      setForm(VACIO);
+    }
 
-            <form className="tecnicoForm">
+    setErrores({});
+    setError("");
+  }, [open, editando, tecnico]);
 
-                <div className="formGrid">
+  if (!open) return null;
 
-                    <div>
+  function validar() {
+    const nuevo = {};
 
-                        <label>Documento</label>
+    if (!form.nombre.trim()) nuevo.nombre = "El nombre es obligatorio.";
+    if (!form.documento.trim())
+      nuevo.documento = "El documento es obligatorio.";
 
-                        <input type="text" />
+    if (!editando && !form.fechaIngreso)
+      nuevo.fechaIngreso = "La fecha de ingreso es obligatoria.";
 
-                    </div>
+    if (form.tarifaHora === "" || Number(form.tarifaHora) < 0)
+      nuevo.tarifaHora = "Ingrese una tarifa por hora válida.";
 
-                    <div>
+    if (editando) {
+      const capacidad = Number(form.capacidadMaxima);
+      if (
+        form.capacidadMaxima === "" ||
+        !Number.isInteger(capacidad) ||
+        capacidad < 1
+      ) {
+        nuevo.capacidadMaxima =
+          "Ingrese una capacidad máxima entera y mayor o igual a 1.";
+      } else if (
+        tecnico?.cargaActual != null &&
+        capacidad < tecnico.cargaActual
+      ) {
+        nuevo.capacidadMaxima = `No puede ser menor que la carga actual (${tecnico.cargaActual}).`;
+      }
+    }
 
-                        <label>Nombre</label>
+    setErrores(nuevo);
+    return Object.keys(nuevo).length === 0;
+  }
 
-                        <input type="text" />
+  async function guardar(e) {
+    e.preventDefault();
 
-                    </div>
+    if (!validar()) return;
 
-                    <div>
+    setError("");
+    setGuardando(true);
 
-                        <label>Teléfono</label>
+    try {
+      if (editando) {
+        await editarTecnico(tecnico.idEmpleado, {
+          nombre: form.nombre.trim(),
+          documento: form.documento.trim(),
+          tarifaHora: Number(form.tarifaHora),
+          especialidad: form.especialidad.trim() || null,
+          capacidadMaxima: Number(form.capacidadMaxima),
+        });
+      } else {
+        await crearTecnico({
+          nombre: form.nombre.trim(),
+          documento: form.documento.trim(),
+          fechaIngreso: form.fechaIngreso,
+          tarifaHora: Number(form.tarifaHora),
+          especialidad: form.especialidad.trim() || null,
+        });
+      }
 
-                        <input type="text" />
+      onGuardado();
+      onClose();
+    } catch (err) {
+      setError(err.response?.data?.mensaje || "No se pudo guardar el técnico.");
+    } finally {
+      setGuardando(false);
+    }
+  }
 
-                    </div>
+  return (
+    <Modal
+      open={open}
+      title={editando ? "Editar Técnico" : "Nuevo Técnico"}
+      onClose={onClose}
+    >
+      {error && <div className="alert alert-error">{error}</div>}
 
-                    <div>
+      <form className="tecnicoForm" onSubmit={guardar}>
+        <div className="formGrid">
+          <Input
+            label="Documento"
+            required
+            value={form.documento}
+            error={errores.documento}
+            onChange={(e) => setForm({ ...form, documento: e.target.value })}
+          />
 
-                        <label>Correo</label>
+          <Input
+            label="Nombre"
+            required
+            value={form.nombre}
+            error={errores.nombre}
+            onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+          />
 
-                        <input type="email" />
+          {!editando && (
+            <Input
+              label="Fecha de Ingreso"
+              type="date"
+              required
+              value={form.fechaIngreso}
+              error={errores.fechaIngreso}
+              onChange={(e) =>
+                setForm({ ...form, fechaIngreso: e.target.value })
+              }
+            />
+          )}
 
-                    </div>
+          <Input
+            label="Tarifa por Hora"
+            type="number"
+            required
+            value={form.tarifaHora}
+            error={errores.tarifaHora}
+            onChange={(e) => setForm({ ...form, tarifaHora: e.target.value })}
+          />
 
-                    <div>
+          <Input
+            label="Especialidad"
+            value={form.especialidad}
+            onChange={(e) => setForm({ ...form, especialidad: e.target.value })}
+          />
 
-                        <label>Especialidad</label>
+          {editando && (
+            <Input
+              label={`Capacidad Máxima${
+                tecnico?.cargaActual != null
+                  ? ` (carga actual: ${tecnico.cargaActual})`
+                  : ""
+              }`}
+              type="number"
+              required
+              value={form.capacidadMaxima}
+              error={errores.capacidadMaxima}
+              onChange={(e) =>
+                setForm({ ...form, capacidadMaxima: e.target.value })
+              }
+            />
+          )}
+        </div>
 
-                        <select>
+        <div className="tecnicoModalFooter">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
 
-                            <option>Motor</option>
-
-                            <option>Electricidad</option>
-
-                            <option>Suspensión</option>
-
-                            <option>Diagnóstico</option>
-
-                        </select>
-
-                    </div>
-
-                    <div>
-
-                        <label>Experiencia</label>
-
-                        <input
-                            type="text"
-                            placeholder="Ej: 5 años"
-                        />
-
-                    </div>
-
-                </div>
-
-                <div className="modalActions">
-
-                    <button
-                        type="button"
-                        className="btnCancelar"
-                        onClick={onClose}
-                    >
-
-                        Cancelar
-
-                    </button>
-
-                    <button
-                        type="submit"
-                        className="btnGuardar"
-                    >
-
-                        Guardar
-
-                    </button>
-
-                </div>
-
-            </form>
-
-        </Modal>
-
-    );
-
+          <Button type="submit" variant="primary" disabled={guardando}>
+            {guardando
+              ? "Guardando..."
+              : editando
+                ? "Guardar Cambios"
+                : "Crear Técnico"}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
 }

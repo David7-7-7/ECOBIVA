@@ -11,6 +11,7 @@ const permisoRoutes = require("./routes/permisoRoutes");
 const auditoriaRoutes = require("./routes/auditoriaRoutes");
 const perfilRoutes = require("./routes/perfilRoutes");
 const empleadoRoutes = require("./routes/empleadoRoutes");
+const tecnicoRoutes = require("./routes/tecnicoRoutes");
 const historialCargoRoutes = require("./routes/historialCargoRoutes");
 const nominaRoutes = require("./routes/nominaRoutes");
 const clienteRoutes = require("./routes/clienteRoutes");
@@ -18,6 +19,9 @@ const vehiculoRoutes = require("./routes/vehiculoRoutes");
 const repuestoRoutes = require("./routes/repuestoRoutes");
 const bateriaRoutes = require("./routes/bateriaRoutes");
 const kardexRoutes = require("./routes/kardexRoutes");
+const ordenRoutes = require("./routes/ordenRoutes");
+const diagnosticoRoutes = require("./routes/diagnosticoRoutes");
+const facturaRoutes = require("./routes/facturaRoutes");
 
 const app = express();
 
@@ -35,6 +39,7 @@ app.use("/api/permisos", permisoRoutes);
 app.use("/api/auditoria", auditoriaRoutes);
 app.use("/api/perfil", perfilRoutes);
 app.use("/api/empleados", empleadoRoutes);
+app.use("/api/tecnicos", tecnicoRoutes);
 app.use("/api/historial-cargo", historialCargoRoutes);
 app.use("/api/nominas", nominaRoutes);
 app.use("/api/clientes", clienteRoutes);
@@ -42,6 +47,9 @@ app.use("/api/vehiculos", vehiculoRoutes);
 app.use("/api/repuestos", repuestoRoutes);
 app.use("/api/baterias", bateriaRoutes);
 app.use("/api/kardex", kardexRoutes);
+app.use("/api/ordenes", ordenRoutes);
+app.use("/api/diagnosticos", diagnosticoRoutes);
+app.use("/api/facturas", facturaRoutes);
 
 // Ruta de prueba para confirmar que los middlewares funcionan.
 app.get(

@@ -12,7 +12,6 @@ import {
   FaUserShield,
   FaKey,
   FaHistory,
-  FaLock,
   FaSignOutAlt,
   FaBars,
   FaUserTie,
@@ -57,7 +56,7 @@ const MENU = [
     roles: ["Admin"],
   },
   {
-    nombre: "Técnicos",
+    nombre: "Tecnicos",
     ruta: "/tecnicos",
     icono: <FaTools />,
     roles: ["Admin"],
@@ -72,7 +71,7 @@ const MENU = [
     nombre: "Configuración",
     ruta: "/configuracion",
     icono: <FaCog />,
-    roles: ["Admin"],
+    roles: ["Admin", "Asesor", "Tecnico"],
   },
 
   // Seguridad
@@ -113,13 +112,6 @@ const MENU = [
     ruta: "/nomina",
     icono: <FaMoneyCheckAlt />,
     roles: ["Admin"],
-  },
-
-  {
-    nombre: "Mi contraseña",
-    ruta: "/perfil",
-    icono: <FaLock />,
-    roles: ["Admin", "Asesor", "Tecnico"],
   },
 ];
 

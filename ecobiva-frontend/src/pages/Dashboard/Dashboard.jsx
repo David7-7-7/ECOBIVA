@@ -3,148 +3,87 @@ import "./Dashboard.css";
 import { useAuth } from "../../context/AuthContext";
 
 const CONTENIDO_POR_ROL = {
+  Admin: {
+    eyebrow: "Administrador del sistema",
 
-    Admin: {
+    titulo: "Acceso total",
 
-        eyebrow: "Administrador del sistema",
+    tarjetas: [
+      {
+        label: "Usuarios",
+        valor: "Gestión completa",
+        href: "/usuarios",
+      },
 
-        titulo: "Acceso total",
+      {
+        label: "Permisos",
+        valor: "RBAC",
+      },
 
-        tarjetas: [
+      {
+        label: "Auditoría",
+        valor: "Logs",
+      },
+    ],
+  },
 
-            {
-                label: "Usuarios",
-                valor: "Gestión completa",
-                href: "/usuarios"
-            },
+  Tecnico: {
+    eyebrow: "Tecnico",
 
-            {
-                label: "Permisos",
-                valor: "RBAC"
-            },
+    titulo: "Módulo Taller",
 
-            {
-                label: "Auditoría",
-                valor: "Logs"
-            }
+    tarjetas: [
+      {
+        label: "Órdenes",
+        valor: "Próximamente",
+      },
+    ],
+  },
 
-        ]
+  Asesor: {
+    eyebrow: "Asesor",
 
-    },
+    titulo: "Atención",
 
-    Tecnico: {
-
-        eyebrow: "Técnico",
-
-        titulo: "Módulo Taller",
-
-        tarjetas: [
-
-            {
-                label: "Órdenes",
-                valor: "Próximamente"
-            }
-
-        ]
-
-    },
-
-    Asesor: {
-
-        eyebrow: "Asesor",
-
-        titulo: "Atención",
-
-        tarjetas: [
-
-            {
-                label: "Clientes",
-                valor: "Próximamente"
-            }
-
-        ]
-
-    }
-
+    tarjetas: [
+      {
+        label: "Clientes",
+        valor: "Próximamente",
+      },
+    ],
+  },
 };
 
-export default function Dashboard(){
+export default function Dashboard() {
+  const { nombresRoles } = useAuth();
 
-    const { nombresRoles } = useAuth();
+  const roles = nombresRoles.length ? nombresRoles : ["Asesor"];
 
-    const roles =
-        nombresRoles.length
-            ? nombresRoles
-            : ["Asesor"];
+  return (
+    <>
+      {roles.map((rol) => {
+        const contenido = CONTENIDO_POR_ROL[rol] ?? CONTENIDO_POR_ROL.Asesor;
 
-    return(
+        return (
+          <div key={rol} style={{ marginBottom: 30 }}>
+            <div className="page-header">
+              <div className="eyebrow">{contenido.eyebrow}</div>
 
-        <>
+              <h2>{contenido.titulo}</h2>
+            </div>
 
-            {roles.map((rol)=>{
+            <div className="grid">
+              {contenido.tarjetas.map((card) => (
+                <div key={card.label} className="card stat-card">
+                  <div className="label">{card.label}</div>
 
-                const contenido =
-                    CONTENIDO_POR_ROL[rol] ??
-                    CONTENIDO_POR_ROL.Asesor;
-
-                return(
-
-                    <div
-                        key={rol}
-                        style={{marginBottom:30}}
-                    >
-
-                        <div className="page-header">
-
-                            <div className="eyebrow">
-
-                                {contenido.eyebrow}
-
-                            </div>
-
-                            <h2>
-
-                                {contenido.titulo}
-
-                            </h2>
-
-                        </div>
-
-                        <div className="grid">
-
-                            {contenido.tarjetas.map((card)=>(
-
-                                <div
-                                    key={card.label}
-                                    className="card stat-card"
-                                >
-
-                                    <div className="label">
-
-                                        {card.label}
-
-                                    </div>
-
-                                    <div className="value">
-
-                                        {card.valor}
-
-                                    </div>
-
-                                </div>
-
-                            ))}
-
-                        </div>
-
-                    </div>
-
-                );
-
-            })}
-
-        </>
-
-    );
-
+                  <div className="value">{card.valor}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
 }

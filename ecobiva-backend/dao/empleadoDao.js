@@ -48,65 +48,76 @@ async function obtenerPorId(idEmpleado, connection = pool) {
 }
 
 /**
- * Crea un empleado.
+ * Busca un empleado por documento (para validar duplicados antes de crear).
  */
-async function crear(datos) {
-  const connection = await pool.getConnection();
+async function obtenerPorDocumento(documento, connection = pool) {
+  const [rows] = await connection.query(
+    `SELECT * FROM Empleado WHERE documento = ?`,
+    [documento],
+  );
+
+  return rows[0] || null;
+}
+
+/**
+ * Actualiza cargoActual/tarifaHora de un empleado sin tocar el resto de campos
+ * (usado al sincronizar el cargo cuando cambia el rol de su usuario).
+ */
+async function actualizarInformacionLaboral(idEmpleado, { cargoActual, tarifaHora }) {
+  const [result] = await pool.query(
+    `UPDATE Empleado SET cargoActual = ?, tarifaHora = ? WHERE idEmpleado = ?`,
+    [cargoActual, tarifaHora, idEmpleado],
+  );
+
+  return result;
+}
+
+/**
+ * Crea un empleado. Si se pasa una conexión externa (connExternal), la usa
+ * para participar en una transacción ya abierta por el llamador, en vez de
+ * abrir/commitear la suya propia (evita romper la atomicidad, p.ej. al crear
+ * Empleado + Usuario + preguntas de seguridad en un solo POST /api/usuarios).
+ */
+async function crear(datos, connExternal = null) {
+  const connection = connExternal || (await pool.getConnection());
 
   try {
-    await connection.beginTransaction();
+    if (!connExternal) await connection.beginTransaction();
 
     const [result] = await connection.query(
       `
-
             INSERT INTO Empleado
             (
-
                 nombre,
-
                 documento,
-
                 fechaIngreso,
-
                 cargoActual,
-
                 tarifaHora,
-
                 estadoLaboral
-
             )
-
             VALUES (?,?,?,?,?,1)
-
         `,
       [
         datos.nombre,
-
         datos.documento,
-
         datos.fechaIngreso,
-
         datos.cargoActual,
-
         datos.tarifaHora,
       ],
     );
 
-    const empleado = await obtenerPorId(
-      result.insertId,
+    if (!connExternal) {
+      const empleado = await obtenerPorId(result.insertId, connection);
+      await connection.commit();
+      return empleado;
+    }
 
-      connection,
-    );
-
-    await connection.commit();
-
-    return empleado;
+    return result.insertId;
   } catch (error) {
-    await connection.rollback();
-
+    if (!connExternal) await connection.rollback();
     throw error;
   } finally {
-    connection.release();
+    if (!connExternal) connection.release();
   }
 }
 /**
@@ -334,9 +345,13 @@ module.exports = {
 
   obtenerPorId,
 
+  obtenerPorDocumento,
+
   crear,
 
   actualizar,
+
+  actualizarInformacionLaboral,
 
   desactivar,
 

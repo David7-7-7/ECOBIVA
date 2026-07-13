@@ -1,161 +1,235 @@
-import { useEffect, useState } from 'react';
-import { usuariosApi, rolesApi } from '../../api/api';
+import "./Usuarios.css";
 
-const VACIO = { idUsuario: null, correo: '', password: '', idRol: '' };
+import { useEffect, useState } from "react";
+import { FaPlus, FaUndo } from "react-icons/fa";
+
+import PageHeader from "../../components/PageHeader/PageHeader";
+import ActionButtons from "../../components/ActionButtons/ActionButtons";
+import StatusBadge from "../../components/StatusBadge/StatusBadge";
+import DataTable from "../../components/DataTable/DataTable";
+import SearchBar from "../../components/SearchBar/SearchBar";
+import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
+import UsuarioModal from "../../components/UsuarioModal/UsuarioModal";
+
+import {
+  listarUsuarios,
+  crearUsuario,
+  editarUsuario,
+  desactivarUsuario,
+  activarUsuario,
+} from "../../services/usuarioService";
+import { listarRoles } from "../../services/rolService";
+
+const COLUMNAS = [
+  { key: "correo", label: "Correo" },
+  { key: "nombreEmpleado", label: "Empleado" },
+  { key: "roles", label: "Rol" },
+  { key: "estado", label: "Estado" },
+  { key: "acciones", label: "Acciones" },
+];
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [roles, setRoles] = useState([]);
-  const [form, setForm] = useState(VACIO);
-  const [editando, setEditando] = useState(false);
-  const [error, setError] = useState('');
-  const [mensaje, setMensaje] = useState('');
   const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState("");
+  const [mensaje, setMensaje] = useState("");
+  const [busqueda, setBusqueda] = useState("");
 
-  async function cargarTodo() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const [usuarioEditando, setUsuarioEditando] = useState(null);
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [usuarioAEstado, setUsuarioAEstado] = useState(null);
+
+  async function cargar() {
     setCargando(true);
-    setError('');
+    setError("");
+
     try {
-      const [resUsuarios, resRoles] = await Promise.all([usuariosApi.listar(), rolesApi.listar()]);
-      setUsuarios(resUsuarios.data);
-      setRoles(resRoles.data);
+      const data = await listarUsuarios();
+      setUsuarios(data || []);
     } catch (err) {
-      setError(err.response?.data?.error || 'No se pudo cargar la lista de usuarios');
+      setError(
+        err.response?.data?.error || "No se pudo cargar el listado de usuarios.",
+      );
     } finally {
       setCargando(false);
     }
   }
 
-  useEffect(() => { cargarTodo(); }, []);
-
-  function editar(usuario) {
-    setEditando(true);
-    setForm({ idUsuario: usuario.idUsuario, correo: usuario.correo, password: '', idRol: usuario.idRol });
-    setMensaje('');
+  async function cargarRoles() {
+    try {
+      const data = await listarRoles();
+      setRoles(data || []);
+    } catch {
+      setRoles([]);
+    }
   }
 
-  function nuevo() {
+  useEffect(() => {
+    cargar();
+    cargarRoles();
+  }, []);
+
+  function abrirCrear() {
     setEditando(false);
-    setForm(VACIO);
-    setMensaje('');
+    setUsuarioEditando(null);
+    setModalOpen(true);
   }
 
-  async function guardar(e) {
-    e.preventDefault();
-    setError('');
-    setMensaje('');
+  function abrirEditar(usuario) {
+    setEditando(true);
+    setUsuarioEditando(usuario);
+    setModalOpen(true);
+  }
+
+  function pedirCambioEstado(usuario) {
+    setUsuarioAEstado(usuario);
+    setConfirmOpen(true);
+  }
+
+  async function confirmarCambioEstado() {
+    setMensaje("");
+    setError("");
+
     try {
-      if (editando) {
-        await usuariosApi.editar(form.idUsuario, { correo: form.correo, idRol: form.idRol });
-        setMensaje('Usuario actualizado');
+      if (usuarioAEstado.estado === false || usuarioAEstado.estado === 0) {
+        await activarUsuario(usuarioAEstado.idUsuario);
+        setMensaje("Usuario activado correctamente.");
       } else {
-        await usuariosApi.crear({ correo: form.correo, password: form.password, idRol: form.idRol });
-        setMensaje('Usuario creado');
+        await desactivarUsuario(usuarioAEstado.idUsuario);
+        setMensaje("Usuario desactivado correctamente.");
       }
-      nuevo();
-      cargarTodo();
+
+      setConfirmOpen(false);
+      cargar();
     } catch (err) {
-      setError(err.response?.data?.error || 'Error guardando el usuario');
+      setError(
+        err.response?.data?.error || "No se pudo actualizar el estado del usuario.",
+      );
+      setConfirmOpen(false);
     }
   }
 
-  async function desactivar(idUsuario) {
-    if (!confirm('¿Desactivar este usuario?')) return;
-    try {
-      await usuariosApi.desactivar(idUsuario);
-      cargarTodo();
-    } catch (err) {
-      setError(err.response?.data?.error || 'No se pudo desactivar el usuario');
+  async function guardarUsuario(form) {
+    if (editando) {
+      await editarUsuario(usuarioEditando.idUsuario, {
+        correo: form.correo,
+        nombreRol: form.nombreRol,
+      });
+      setMensaje("Usuario actualizado correctamente.");
+    } else {
+      await crearUsuario(form);
+      setMensaje("Usuario creado correctamente.");
     }
+    cargar();
   }
+
+  const usuariosFiltrados = usuarios.filter((usuario) => {
+    const texto = busqueda.toLowerCase();
+
+    return (
+      usuario.correo?.toLowerCase().includes(texto) ||
+      usuario.nombreEmpleado?.toLowerCase().includes(texto) ||
+      (Array.isArray(usuario.roles) ? usuario.roles.join(", ") : "")
+        .toLowerCase()
+        .includes(texto)
+    );
+  });
+
+  const estaActivo = (usuario) => !(usuario.estado === false || usuario.estado === 0);
 
   return (
-    <div>
-      <div className="page-header">
-        <div className="eyebrow">Módulo de seguridad</div>
-        <h2>Usuarios</h2>
-      </div>
+    <>
+      <PageHeader
+        title="Usuarios"
+        subtitle="Administración de cuentas y roles de acceso."
+        button={
+          <button className="btnNuevo" onClick={abrirCrear}>
+            <FaPlus />
+            Nuevo Usuario
+          </button>
+        }
+      />
 
       {error && <div className="alert alert-error">{error}</div>}
       {mensaje && <div className="alert alert-success">{mensaje}</div>}
 
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>{editando ? 'Editar usuario' : 'Crear usuario'}</h3>
-        <form onSubmit={guardar}>
-          <div className="grid">
-            <div className="form-row">
-              <label>Correo</label>
-              <input
-                type="email"
-                value={form.correo}
-                onChange={(e) => setForm({ ...form, correo: e.target.value })}
-                required
-              />
-            </div>
-            {!editando && (
-              <div className="form-row">
-                <label>Contraseña inicial</label>
-                <input
-                  type="password"
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  required
-                />
-              </div>
-            )}
-            <div className="form-row">
-              <label>Rol</label>
-              <select value={form.idRol} onChange={(e) => setForm({ ...form, idRol: e.target.value })} required>
-                <option value="">Selecciona un rol</option>
-                {roles.map((r) => (
-                  <option key={r.idRol} value={r.idRol}>{r.nombre}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-            <button className="btn btn-primary" type="submit">
-              {editando ? 'Guardar cambios' : 'Crear usuario'}
-            </button>
-            {editando && (
-              <button className="btn btn-secondary" type="button" onClick={nuevo}>Cancelar</button>
-            )}
-          </div>
-        </form>
-      </div>
+      <div className="usuariosCard">
+        <SearchBar
+          placeholder="Buscar por correo, empleado o rol..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
 
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>Listado</h3>
         {cargando ? (
-          <p>Cargando...</p>
+          <p className="cargandoTexto">Cargando...</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Correo</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {usuarios.map((u) => (
-                <tr key={u.idUsuario}>
-                  <td>{u.correo}</td>
-                  {/* Soporta ambas formas: array de roles activos (modelo real N:M)
-                      o un solo idRol/nombreRol plano, según devuelva tu endpoint real */}
-                  <td>{Array.isArray(u.roles) ? u.roles.map((r) => r.nombreRol).join(', ') : (u.nombreRol || u.idRol)}</td>
-                  <td>{u.estado === false || u.estado === 0 ? 'Inactivo' : 'Activo'}</td>
-                  <td style={{ display: 'flex', gap: 6 }}>
-                    <button className="btn btn-secondary" onClick={() => editar(u)}>Editar</button>
-                    <button className="btn btn-danger" onClick={() => desactivar(u.idUsuario)}>Desactivar</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <DataTable
+            columns={COLUMNAS}
+            data={usuariosFiltrados}
+            emptyMessage="No hay usuarios registrados."
+            renderCell={(usuario, column) => {
+              if (column.key === "roles")
+                return Array.isArray(usuario.roles)
+                  ? usuario.roles.join(", ")
+                  : "Sin rol";
+
+              if (column.key === "estado")
+                return (
+                  <StatusBadge status={estaActivo(usuario) ? "Activo" : "Inactivo"} />
+                );
+
+              if (column.key === "acciones")
+                return (
+                  <div className="usuariosAcciones">
+                    <ActionButtons
+                      onEdit={() => abrirEditar(usuario)}
+                      onDelete={
+                        estaActivo(usuario) ? () => pedirCambioEstado(usuario) : undefined
+                      }
+                    />
+
+                    {!estaActivo(usuario) && (
+                      <button
+                        className="accion reactivarBtn"
+                        title="Activar"
+                        onClick={() => pedirCambioEstado(usuario)}
+                      >
+                        <FaUndo />
+                      </button>
+                    )}
+                  </div>
+                );
+
+              return usuario[column.key];
+            }}
+          />
         )}
       </div>
-    </div>
+
+      <UsuarioModal
+        open={modalOpen}
+        usuario={usuarioEditando}
+        editando={editando}
+        roles={roles}
+        onClose={() => setModalOpen(false)}
+        onSave={guardarUsuario}
+      />
+
+      <ConfirmModal
+        open={confirmOpen}
+        title={estaActivo(usuarioAEstado || {}) ? "Desactivar Usuario" : "Activar Usuario"}
+        message={
+          estaActivo(usuarioAEstado || {})
+            ? `¿Está seguro de desactivar a ${usuarioAEstado?.correo}?`
+            : `¿Está seguro de activar a ${usuarioAEstado?.correo}?`
+        }
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={confirmarCambioEstado}
+      />
+    </>
   );
 }

@@ -117,6 +117,22 @@ export function AuthProvider({ children }) {
 
     }
 
+    // BUGFIX (correo/JWT desactualizado tras cambiarlo desde Configuración):
+    // cuando el backend reemite un token nuevo (porque el correo cambió),
+    // esta función deja el AuthContext -y por lo tanto localStorage, vía los
+    // useEffect de arriba- sincronizado sin esperar al próximo login.
+    function sincronizarSesion(nuevoToken, nuevoUsuario) {
+
+        if (nuevoToken) {
+            setToken(nuevoToken);
+        }
+
+        if (nuevoUsuario) {
+            setUsuario((actual) => ({ ...actual, ...nuevoUsuario }));
+        }
+
+    }
+
     const nombresRoles =
 
         (usuario?.roles || []).map(
@@ -146,6 +162,8 @@ export function AuthProvider({ children }) {
         login,
 
         logout,
+
+        sincronizarSesion,
 
         estaAutenticado: !!token,
 

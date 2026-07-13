@@ -1,0 +1,20 @@
+.aprobacionAcciones {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.btnRechazar {
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btnRechazar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -4,65 +4,52 @@ import DataField from "../DataField/DataField";
 import StatusBadge from "../StatusBadge/StatusBadge";
 
 export default function TecnicoDetail({ tecnico }) {
+  if (!tecnico) return null;
 
-    if (!tecnico) return null;
+  return (
+    <section className="detailSection">
+      <h3>Información del Técnico</h3>
 
-    return (
+      <div className="detailGrid">
+        <DataField label="Documento" value={tecnico.documento} />
 
-        <section className="detailSection">
+        <DataField label="Nombre" value={tecnico.nombre} />
 
-            <h3>Información del Técnico</h3>
+        <DataField
+          label="Correo"
+          value={tecnico.correo || "Sin usuario asignado"}
+        />
 
-            <div className="detailGrid">
+        <DataField
+          label="Especialidad"
+          value={tecnico.especialidad || "Sin especialidad"}
+        />
 
-                <DataField
-                    label="Documento"
-                    value={tecnico.documento}
-                />
+        <DataField
+          label="Fecha de Ingreso"
+          value={
+            tecnico.fechaIngreso
+              ? String(tecnico.fechaIngreso).slice(0, 10)
+              : "-"
+          }
+        />
 
-                <DataField
-                    label="Nombre"
-                    value={tecnico.nombre}
-                />
+        <DataField
+          label="Tarifa por Hora"
+          value={`$${Number(tecnico.tarifaHora || 0).toLocaleString("es-CO")}`}
+        />
 
-                <DataField
-                    label="Teléfono"
-                    value={tecnico.telefono}
-                />
+        <DataField
+          label="Carga de trabajo"
+          value={`${tecnico.cargaActual ?? 0} / ${tecnico.capacidadMaxima ?? "-"}`}
+        />
 
-                <DataField
-                    label="Correo"
-                    value={tecnico.correo}
-                />
+        <div>
+          <span className="fieldTitle">Estado</span>
 
-                <DataField
-                    label="Especialidad"
-                    value={tecnico.especialidad}
-                />
-
-                <DataField
-                    label="Experiencia"
-                    value={tecnico.experiencia}
-                />
-
-                <div>
-
-                    <span className="fieldTitle">
-
-                        Estado
-
-                    </span>
-
-                    <StatusBadge
-                        status={tecnico.estado}
-                    />
-
-                </div>
-
-            </div>
-
-        </section>
-
-    );
-
+          <StatusBadge status={tecnico.estadoLaboral ? "Activo" : "Inactivo"} />
+        </div>
+      </div>
+    </section>
+  );
 }

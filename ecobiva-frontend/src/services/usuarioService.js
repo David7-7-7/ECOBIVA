@@ -19,3 +19,8 @@ export async function desactivarUsuario(id) {
     const { data } = await usuariosApi.desactivar(id);
     return data;
 }
+
+export async function activarUsuario(id) {
+    const { data } = await usuariosApi.activar(id);
+    return data;
+}

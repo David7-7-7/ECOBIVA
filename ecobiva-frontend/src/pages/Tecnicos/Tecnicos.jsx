@@ -1,202 +1,235 @@
 import "./Tecnicos.css";
 
-import MainLayout from "../../layouts/MainLayout";
-import { FaPlus, FaSearch } from "react-icons/fa";
+import { useEffect, useState } from "react";
+import { FaPlus, FaUndo } from "react-icons/fa";
+
 import PageHeader from "../../components/PageHeader/PageHeader";
 import ActionButtons from "../../components/ActionButtons/ActionButtons";
 import StatusBadge from "../../components/StatusBadge/StatusBadge";
-import { useState } from "react";
-
+import DataTable from "../../components/DataTable/DataTable";
 import SearchBar from "../../components/SearchBar/SearchBar";
 import DetailModal from "../../components/DetailModal/DetailModal";
 import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
 import TecnicoDetail from "../../components/TecnicoDetail/TecnicoDetail";
+import TecnicoModal from "../../components/TecnicoModal/TecnicoModal";
 
+import {
+  listarTecnicos,
+  desactivarTecnico,
+  reactivarTecnico,
+} from "../../services/tecnicoService";
+
+const COLUMNAS = [
+  { key: "documento", label: "Documento" },
+  { key: "nombre", label: "Nombre" },
+  { key: "especialidad", label: "Especialidad" },
+  { key: "correo", label: "Usuario" },
+  { key: "carga", label: "Carga" },
+  { key: "estadoLaboral", label: "Estado" },
+  { key: "acciones", label: "Acciones" },
+];
 
 export default function Tecnicos() {
+  const [tecnicos, setTecnicos] = useState([]);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState("");
+  const [mensaje, setMensaje] = useState("");
+  const [busqueda, setBusqueda] = useState("");
 
-    const [abrirModal, setAbrirModal] = useState(false);
-    const [tecnicoSeleccionado, setTecnicoSeleccionado] = useState(null);
-    const [detalleOpen, setDetalleOpen] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState(false);
-    const [busqueda, setBusqueda] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const [tecnicoEditando, setTecnicoEditando] = useState(null);
 
-    const tecnicos = [
+  const [detalleOpen, setDetalleOpen] = useState(false);
+  const [tecnicoSeleccionado, setTecnicoSeleccionado] = useState(null);
 
-        {
-            documento: "1001234567",
-            nombre: "Carlos Martínez",
-            telefono: "3204567890",
-            correo: "carlos@ecobiva.com",
-            especialidad: "Motor",
-            experiencia: "8 años",
-            estado: "Activo"
-        },
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [tecnicoAEstado, setTecnicoAEstado] = useState(null);
 
-        {
-            documento: "1004567891",
-            nombre: "Andrés Rojas",
-            telefono: "3112223344",
-            correo: "andres@ecobiva.com",
-            especialidad: "Electricidad",
-            experiencia: "5 años",
-            estado: "Activo"
-        },
+  async function cargar() {
+    setCargando(true);
+    setError("");
 
-        {
-            documento: "1012223344",
-            nombre: "Luis Gómez",
-            telefono: "3154445566",
-            correo: "luis@ecobiva.com",
-            especialidad: "Suspensión",
-            experiencia: "6 años",
-            estado: "Inactivo"
-        }
+    try {
+      const respuesta = await listarTecnicos();
+      setTecnicos(respuesta.data || []);
+    } catch (err) {
+      setError(
+        err.response?.data?.mensaje ||
+          "No se pudo cargar el listado de técnicos.",
+      );
+    } finally {
+      setCargando(false);
+    }
+  }
 
-    ];
+  useEffect(() => {
+    cargar();
+  }, []);
+
+  function abrirCrear() {
+    setEditando(false);
+    setTecnicoEditando(null);
+    setModalOpen(true);
+  }
+
+  function abrirEditar(tecnico) {
+    setEditando(true);
+    setTecnicoEditando(tecnico);
+    setModalOpen(true);
+  }
+
+  function pedirCambioEstado(tecnico) {
+    setTecnicoAEstado(tecnico);
+    setConfirmOpen(true);
+  }
+
+  async function confirmarCambioEstado() {
+    setMensaje("");
+    setError("");
+
+    try {
+      if (tecnicoAEstado.estadoLaboral) {
+        await desactivarTecnico(tecnicoAEstado.idEmpleado);
+        setMensaje("Técnico desactivado correctamente.");
+      } else {
+        await reactivarTecnico(tecnicoAEstado.idEmpleado);
+        setMensaje("Técnico reactivado correctamente.");
+      }
+
+      setConfirmOpen(false);
+      cargar();
+    } catch (err) {
+      setError(
+        err.response?.data?.mensaje ||
+          "No se pudo actualizar el estado del técnico.",
+      );
+      setConfirmOpen(false);
+    }
+  }
+
+  const tecnicosFiltrados = tecnicos.filter((tecnico) => {
+    const texto = busqueda.toLowerCase();
+
     return (
-
-        <>
-
-            <PageHeader
-
-                title="Técnicos"
-
-                subtitle="Administración del personal."
-
-                button={
-
-                    <button className="btnNuevo">
-
-                        <FaPlus />
-
-                        Nuevo Técnico
-
-                    </button>
-
-                }
-
-            />
-
-            <div className="tecnicosCard">
-
-                <SearchBar
-                    placeholder="Buscar técnico..."
-                    value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
-                />
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-                            <th>Documento</th>
-                            <th>Nombre</th>
-                            <th>Especialidad</th>
-                            <th>Teléfono</th>
-                            <th>Correo</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                        {
-
-                            tecnicos.map((tecnico, index) => (
-
-                                <tr key={index}>
-
-                                    <td>{tecnico.documento}</td>
-
-                                    <td>{tecnico.nombre}</td>
-
-                                    <td>{tecnico.especialidad}</td>
-
-                                    <td>{tecnico.telefono}</td>
-
-                                    <td>{tecnico.correo}</td>
-
-                                    <td>
-
-                                        <StatusBadge
-                                            status={tecnico.estado}
-                                        />
-
-                                    </td>
-
-                                    <td>
-
-                                        <ActionButtons
-
-                                            onView={() => {
-                                                setTecnicoSeleccionado(tecnico);
-                                                setDetalleOpen(true);
-                                            }}
-
-                                            onEdit={() => console.log(tecnico)}
-
-                                            onDelete={() => setConfirmDelete(true)}
-
-                                        />
-
-                                    </td>
-
-                                </tr>
-                            ))
-
-                        }
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-            <DetailModal
-
-                open={detalleOpen}
-
-                title="Información del Técnico"
-
-                onClose={() => setDetalleOpen(false)}
-
-            >
-
-                <TecnicoDetail
-
-                    tecnico={tecnicoSeleccionado}
-
-                />
-
-            </DetailModal>
-
-            <ConfirmModal
-
-                open={confirmDelete}
-
-                title="Eliminar Técnico"
-
-                message="¿Está seguro de eliminar este técnico?"
-
-                onClose={() => setConfirmDelete(false)}
-
-                onConfirm={() => {
-
-                    console.log("Eliminar");
-
-                    setConfirmDelete(false);
-
-                }}
-
-            />
-
-
-        </>
-
-    )
-
+      tecnico.nombre?.toLowerCase().includes(texto) ||
+      tecnico.documento?.toLowerCase().includes(texto) ||
+      tecnico.especialidad?.toLowerCase().includes(texto)
+    );
+  });
+
+  return (
+    <>
+      <PageHeader
+        title="Técnicos"
+        subtitle="Administración del personal técnico."
+        button={
+          <button className="btnNuevo" onClick={abrirCrear}>
+            <FaPlus />
+            Nuevo Técnico
+          </button>
+        }
+      />
+
+      {error && <div className="alert alert-error">{error}</div>}
+      {mensaje && <div className="alert alert-success">{mensaje}</div>}
+
+      <div className="tecnicosCard">
+        <SearchBar
+          placeholder="Buscar técnico..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
+
+        {cargando ? (
+          <p className="cargandoTexto">Cargando...</p>
+        ) : (
+          <DataTable
+            columns={COLUMNAS}
+            data={tecnicosFiltrados}
+            emptyMessage="No hay técnicos registrados."
+            renderCell={(tecnico, column) => {
+              if (column.key === "correo")
+                return tecnico.correo || "Sin usuario";
+
+              if (column.key === "carga")
+                return `${tecnico.cargaActual ?? 0} / ${tecnico.capacidadMaxima ?? "-"}`;
+
+              if (column.key === "estadoLaboral")
+                return (
+                  <StatusBadge
+                    status={tecnico.estadoLaboral ? "Activo" : "Inactivo"}
+                  />
+                );
+
+              if (column.key === "acciones")
+                return (
+                  <div className="tecnicosAcciones">
+                    <ActionButtons
+                      onView={() => {
+                        setTecnicoSeleccionado(tecnico);
+                        setDetalleOpen(true);
+                      }}
+                      onEdit={() => abrirEditar(tecnico)}
+                      onDelete={() => pedirCambioEstado(tecnico)}
+                    />
+
+                    {!tecnico.estadoLaboral && (
+                      <button
+                        className="accion reactivarBtn"
+                        title="Reactivar"
+                        onClick={() => pedirCambioEstado(tecnico)}
+                      >
+                        <FaUndo />
+                      </button>
+                    )}
+                  </div>
+                );
+
+              return tecnico[column.key];
+            }}
+          />
+        )}
+      </div>
+
+      <TecnicoModal
+        open={modalOpen}
+        tecnico={tecnicoEditando}
+        editando={editando}
+        onClose={() => setModalOpen(false)}
+        onGuardado={() => {
+          setMensaje(
+            editando
+              ? "Técnico actualizado correctamente."
+              : "Técnico creado correctamente.",
+          );
+          cargar();
+        }}
+      />
+
+      <DetailModal
+        open={detalleOpen}
+        title="Información del Técnico"
+        onClose={() => setDetalleOpen(false)}
+      >
+        <TecnicoDetail tecnico={tecnicoSeleccionado} />
+      </DetailModal>
+
+      <ConfirmModal
+        open={confirmOpen}
+        title={
+          tecnicoAEstado?.estadoLaboral
+            ? "Desactivar Técnico"
+            : "Reactivar Técnico"
+        }
+        message={
+          tecnicoAEstado?.estadoLaboral
+            ? `¿Está seguro de desactivar a ${tecnicoAEstado?.nombre}?`
+            : `¿Está seguro de reactivar a ${tecnicoAEstado?.nombre}?`
+        }
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={confirmarCambioEstado}
+      />
+    </>
+  );
 }

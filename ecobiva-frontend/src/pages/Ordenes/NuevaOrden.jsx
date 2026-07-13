@@ -4,282 +4,162 @@ import MainLayout from "../../layouts/MainLayout";
 
 import { FaSave, FaArrowLeft } from "react-icons/fa";
 
-export default function NuevaOrden(){
+export default function NuevaOrden() {
+  return (
+    <MainLayout>
+      <div className="ordenTop">
+        <div>
+          <h1>Nueva Orden de Servicio</h1>
 
-    return(
+          <p>Registrar una nueva orden de trabajo.</p>
+        </div>
+      </div>
 
-        <MainLayout>
+      <form className="ordenForm">
+        <div className="cardOrden">
+          <h2>Información del Cliente</h2>
 
-            <div className="ordenTop">
+          <div className="grid2">
+            <div>
+              <label>Cliente</label>
 
-                <div>
-
-                    <h1>Nueva Orden de Servicio</h1>
-
-                    <p>Registrar una nueva orden de trabajo.</p>
-
-                </div>
-
+              <select>
+                <option>Seleccione...</option>
+              </select>
             </div>
 
-            <form className="ordenForm">
+            <div>
+              <label>Documento</label>
 
-                <div className="cardOrden">
+              <input type="text" placeholder="Documento" />
+            </div>
 
-                    <h2>Información del Cliente</h2>
+            <div>
+              <label>Teléfono</label>
 
-                    <div className="grid2">
+              <input type="text" placeholder="Teléfono" />
+            </div>
 
-                        <div>
+            <div>
+              <label>Correo</label>
 
-                            <label>Cliente</label>
+              <input type="email" placeholder="Correo" />
+            </div>
+          </div>
+        </div>
 
-                            <select>
+        <div className="cardOrden">
+          <h2>Información del Vehículo</h2>
 
-                                <option>Seleccione...</option>
+          <div className="grid2">
+            <div>
+              <label>Vehículo</label>
 
-                            </select>
+              <select>
+                <option>Seleccione...</option>
+              </select>
+            </div>
 
-                        </div>
+            <div>
+              <label>Placa</label>
 
-                        <div>
+              <input type="text" placeholder="ABC123" />
+            </div>
 
-                            <label>Documento</label>
+            <div>
+              <label>Marca</label>
 
-                            <input
-                                type="text"
-                                placeholder="Documento"
-                            />
+              <input type="text" />
+            </div>
 
-                        </div>
+            <div>
+              <label>Modelo</label>
 
-                        <div>
+              <input type="text" />
+            </div>
 
-                            <label>Teléfono</label>
+            <div>
+              <label>Kilometraje</label>
 
-                            <input
-                                type="text"
-                                placeholder="Teléfono"
-                            />
+              <input type="number" />
+            </div>
 
-                        </div>
+            <div>
+              <label>Color</label>
 
-                        <div>
+              <input type="text" />
+            </div>
+          </div>
+        </div>
 
-                            <label>Correo</label>
+        <div className="cardOrden">
+          <h2>Información de la Orden</h2>
 
-                            <input
-                                type="email"
-                                placeholder="Correo"
-                            />
+          <div className="grid2">
+            <div>
+              <label>Tecnico</label>
 
-                        </div>
+              <select>
+                <option>Seleccione...</option>
+              </select>
+            </div>
 
-                    </div>
+            <div>
+              <label>Prioridad</label>
 
-                </div>
+              <select>
+                <option>Baja</option>
 
-                <div className="cardOrden">
+                <option>Media</option>
 
-                    <h2>Información del Vehículo</h2>
+                <option>Alta</option>
+              </select>
+            </div>
 
-                    <div className="grid2">
+            <div>
+              <label>Estado</label>
 
-                        <div>
+              <select>
+                <option>Pendiente</option>
 
-                            <label>Vehículo</label>
+                <option>En proceso</option>
 
-                            <select>
+                <option>Finalizada</option>
+              </select>
+            </div>
 
-                                <option>Seleccione...</option>
-
-                            </select>
-
-                        </div>
-
-                        <div>
-
-                            <label>Placa</label>
-
-                            <input
-                                type="text"
-                                placeholder="ABC123"
-                            />
-
-                        </div>
-
-                        <div>
-
-                            <label>Marca</label>
-
-                            <input
-                                type="text"
-                            />
-
-                        </div>
-
-                        <div>
-
-                            <label>Modelo</label>
-
-                            <input
-                                type="text"
-                            />
-
-                        </div>
-
-                        <div>
-
-                            <label>Kilometraje</label>
-
-                            <input
-                                type="number"
-                            />
-
-                        </div>
-
-                        <div>
-
-                            <label>Color</label>
-
-                            <input
-                                type="text"
-                            />
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <div className="cardOrden">
-
-                    <h2>Información de la Orden</h2>
-
-                    <div className="grid2">
-
-                        <div>
-
-                            <label>Técnico</label>
-
-                            <select>
-
-                                <option>Seleccione...</option>
-
-                            </select>
-
-                        </div>
-
-                        <div>
-
-                            <label>Prioridad</label>
-
-                            <select>
-
-                                <option>Baja</option>
-
-                                <option>Media</option>
-
-                                <option>Alta</option>
-
-                            </select>
-
-                        </div>
-
-                        <div>
-
-                            <label>Estado</label>
-
-                            <select>
-
-                                <option>Pendiente</option>
-
-                                <option>En proceso</option>
-
-                                <option>Finalizada</option>
-
-                            </select>
-
-                        </div>
-
-                        <div>
-
-                            <label>Fecha</label>
-
-                            <input
-                                type="date"
-                            />
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <div className="cardOrden">
-
-                    <h2>Diagnóstico</h2>
-
-                    <textarea
-
-                        rows="5"
-
-                        placeholder="Ingrese el diagnóstico..."
-
-                    />
-
-                </div>
-
-                <div className="cardOrden">
-
-                    <h2>Observaciones</h2>
-
-                    <textarea
-
-                        rows="5"
-
-                        placeholder="Observaciones..."
-
-                    />
-
-                </div>
-
-                <div className="botonesOrden">
-
-                    <button
-
-                        type="button"
-
-                        className="btnCancelar"
-
-                    >
-
-                        <FaArrowLeft/>
-
-                        Cancelar
-
-                    </button>
-
-                    <button
-
-                        type="submit"
-
-                        className="btnGuardar"
-
-                    >
-
-                        <FaSave/>
-
-                        Guardar Orden
-
-                    </button>
-
-                </div>
-
-            </form>
-
-        </MainLayout>
-
-    )
-
+            <div>
+              <label>Fecha</label>
+
+              <input type="date" />
+            </div>
+          </div>
+        </div>
+
+        <div className="cardOrden">
+          <h2>Diagnóstico</h2>
+
+          <textarea rows="5" placeholder="Ingrese el diagnóstico..." />
+        </div>
+
+        <div className="cardOrden">
+          <h2>Observaciones</h2>
+
+          <textarea rows="5" placeholder="Observaciones..." />
+        </div>
+
+        <div className="botonesOrden">
+          <button type="button" className="btnCancelar">
+            <FaArrowLeft />
+            Cancelar
+          </button>
+
+          <button type="submit" className="btnGuardar">
+            <FaSave />
+            Guardar Orden
+          </button>
+        </div>
+      </form>
+    </MainLayout>
+  );
 }
