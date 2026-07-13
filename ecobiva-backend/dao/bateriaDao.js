@@ -1,13 +1,13 @@
-const pool = require('../config/db');
+const pool = require("../config/db");
 
 async function listarTodos() {
   const [rows] = await pool.execute(
     `SELECT b.idRepuesto, r.nombre, r.categoria, r.precioUnitario, r.proveedor,
             r.stockActual, r.stockMinimo,
             b.serial, b.modeloCompatible, b.estado, b.voltajeFinal, b.amperajeFinal, b.idVehiculo
-     FROM bateria b
-     JOIN repuesto r ON b.idRepuesto = r.idRepuesto
-     ORDER BY b.idRepuesto DESC`
+     FROM Bateria b
+     JOIN Repuesto r ON b.idRepuesto = r.idRepuesto
+     ORDER BY b.idRepuesto DESC`,
   );
   return rows;
 }
@@ -17,10 +17,10 @@ async function obtenerPorId(idRepuesto) {
     `SELECT b.idRepuesto, r.nombre, r.categoria, r.precioUnitario, r.proveedor,
             r.stockActual, r.stockMinimo,
             b.serial, b.modeloCompatible, b.estado, b.voltajeFinal, b.amperajeFinal, b.idVehiculo
-     FROM bateria b
-     JOIN repuesto r ON b.idRepuesto = r.idRepuesto
+     FROM Bateria b
+     JOIN Repuesto r ON b.idRepuesto = r.idRepuesto
      WHERE b.idRepuesto = ?`,
-    [idRepuesto]
+    [idRepuesto],
   );
 
   return rows.length === 0 ? null : rows[0];
@@ -33,7 +33,7 @@ async function crear(bateria) {
     await connection.beginTransaction();
 
     const [result] = await connection.execute(
-      `INSERT INTO repuesto
+      `INSERT INTO Repuesto
        (nombre, categoria, precioUnitario, proveedor, stockActual, stockMinimo)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
@@ -42,14 +42,14 @@ async function crear(bateria) {
         bateria.precioUnitario || 0,
         bateria.proveedor || null,
         bateria.stockActual || 0,
-        bateria.stockMinimo || 0
-      ]
+        bateria.stockMinimo || 0,
+      ],
     );
 
     const idRepuesto = result.insertId;
 
     await connection.execute(
-      `INSERT INTO bateria
+      `INSERT INTO Bateria
        (idRepuesto, serial, modeloCompatible, estado, voltajeFinal, amperajeFinal, idVehiculo)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
@@ -59,8 +59,8 @@ async function crear(bateria) {
         bateria.estado || null,
         bateria.voltajeFinal || null,
         bateria.amperajeFinal || null,
-        bateria.idVehiculo || null
-      ]
+        bateria.idVehiculo || null,
+      ],
     );
 
     await connection.commit();
@@ -80,7 +80,7 @@ async function actualizar(idRepuesto, bateria) {
     await connection.beginTransaction();
 
     await connection.execute(
-      `UPDATE repuesto SET
+      `UPDATE Repuesto SET
         nombre = ?,
         categoria = ?,
         precioUnitario = ?,
@@ -95,12 +95,12 @@ async function actualizar(idRepuesto, bateria) {
         bateria.proveedor || null,
         bateria.stockActual || 0,
         bateria.stockMinimo || 0,
-        idRepuesto
-      ]
+        idRepuesto,
+      ],
     );
 
     await connection.execute(
-      `UPDATE bateria SET
+      `UPDATE Bateria SET
         serial = ?,
         modeloCompatible = ?,
         estado = ?,
@@ -115,8 +115,8 @@ async function actualizar(idRepuesto, bateria) {
         bateria.voltajeFinal || null,
         bateria.amperajeFinal || null,
         bateria.idVehiculo || null,
-        idRepuesto
-      ]
+        idRepuesto,
+      ],
     );
 
     await connection.commit();
@@ -133,8 +133,12 @@ async function eliminar(idRepuesto) {
 
   try {
     await connection.beginTransaction();
-    await connection.execute(`DELETE FROM bateria WHERE idRepuesto = ?`, [idRepuesto]);
-    await connection.execute(`DELETE FROM repuesto WHERE idRepuesto = ?`, [idRepuesto]);
+    await connection.execute(`DELETE FROM Bateria WHERE idRepuesto = ?`, [
+      idRepuesto,
+    ]);
+    await connection.execute(`DELETE FROM Repuesto WHERE idRepuesto = ?`, [
+      idRepuesto,
+    ]);
     await connection.commit();
   } catch (error) {
     await connection.rollback();
@@ -149,5 +153,5 @@ module.exports = {
   obtenerPorId,
   crear,
   actualizar,
-  eliminar
+  eliminar,
 };

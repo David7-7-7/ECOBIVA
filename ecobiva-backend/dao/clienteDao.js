@@ -1,18 +1,18 @@
-const pool = require('../config/db');
+const pool = require("../config/db");
 
 async function listarTodos() {
   const [rows] = await pool.execute(
-    `SELECT * FROM cliente
-     ORDER BY idCliente DESC`
+    `SELECT * FROM Cliente
+     ORDER BY idCliente DESC`,
   );
   return rows;
 }
 
 async function obtenerPorId(idCliente) {
   const [rows] = await pool.execute(
-    `SELECT * FROM cliente
+    `SELECT * FROM Cliente
      WHERE idCliente = ?`,
-    [idCliente]
+    [idCliente],
   );
 
   return rows.length === 0 ? null : rows[0];
@@ -23,14 +23,14 @@ async function obtenerVehiculosPorCliente(idCliente) {
     `SELECT idVehiculo, placa, marca, modelo, anio, serialMotor, tipoVehiculo, especificacionesBateria, idCliente
      FROM vehiculo
      WHERE idCliente = ?`,
-    [idCliente]
+    [idCliente],
   );
   return rows;
 }
 
 async function crear(cliente) {
   const [result] = await pool.execute(
-    `INSERT INTO cliente
+    `INSERT INTO Cliente
      (nombre, telefono, correo, documento, preferenciaNotificacion, estado, puntosAcumulados)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
@@ -38,17 +38,17 @@ async function crear(cliente) {
       cliente.telefono || null,
       cliente.correo || null,
       cliente.documento,
-      cliente.preferenciaNotificacion || 'Correo',
+      cliente.preferenciaNotificacion || "Correo",
       cliente.estado ?? 1,
-      cliente.puntosAcumulados ?? 0
-    ]
+      cliente.puntosAcumulados ?? 0,
+    ],
   );
   return result.insertId;
 }
 
 async function actualizar(idCliente, cliente) {
   await pool.execute(
-    `UPDATE cliente SET
+    `UPDATE Cliente SET
       nombre = ?,
       telefono = ?,
       correo = ?,
@@ -62,25 +62,19 @@ async function actualizar(idCliente, cliente) {
       cliente.telefono || null,
       cliente.correo || null,
       cliente.documento,
-      cliente.preferenciaNotificacion || 'Correo',
+      cliente.preferenciaNotificacion || "Correo",
       cliente.estado ?? 1,
       cliente.puntosAcumulados ?? 0,
-      idCliente
-    ]
+      idCliente,
+    ],
   );
 }
 
 async function eliminar(idCliente) {
   // Remueve vehículos asociados primero para evitar errores de clave foránea.
-  await pool.execute(
-    `DELETE FROM vehiculo WHERE idCliente = ?`,
-    [idCliente]
-  );
+  await pool.execute(`DELETE FROM vehiculo WHERE idCliente = ?`, [idCliente]);
 
-  await pool.execute(
-    `DELETE FROM cliente WHERE idCliente = ?`,
-    [idCliente]
-  );
+  await pool.execute(`DELETE FROM Cliente WHERE idCliente = ?`, [idCliente]);
 }
 
 module.exports = {
@@ -89,5 +83,5 @@ module.exports = {
   obtenerVehiculosPorCliente,
   crear,
   actualizar,
-  eliminar
+  eliminar,
 };

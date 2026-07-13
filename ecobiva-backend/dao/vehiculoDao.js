@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+const pool = require("../config/db");
 
 async function listarTodos() {
   const [rows] = await pool.execute(
@@ -12,9 +12,9 @@ async function listarTodos() {
             v.especificacionesBateria,
             v.idCliente,
             c.nombre AS nombreCliente
-     FROM vehiculo v
-     JOIN cliente c ON c.idCliente = v.idCliente
-     ORDER BY v.idVehiculo DESC`
+     FROM Vehiculo v
+     JOIN Cliente c ON c.idCliente = v.idCliente
+     ORDER BY v.idVehiculo DESC`,
   );
   return rows;
 }
@@ -31,10 +31,10 @@ async function obtenerPorId(idVehiculo) {
             v.especificacionesBateria,
             v.idCliente,
             c.nombre AS nombreCliente
-     FROM vehiculo v
-     JOIN cliente c ON c.idCliente = v.idCliente
+     FROM Vehiculo v
+     JOIN Cliente c ON c.idCliente = v.idCliente
      WHERE v.idVehiculo = ?`,
-    [idVehiculo]
+    [idVehiculo],
   );
 
   return rows.length === 0 ? null : rows[0];
@@ -42,7 +42,7 @@ async function obtenerPorId(idVehiculo) {
 
 async function crear(vehiculo) {
   const [result] = await pool.execute(
-    `INSERT INTO vehiculo
+    `INSERT INTO Vehiculo
      (placa, marca, modelo, anio, serialMotor, tipoVehiculo, especificacionesBateria, idCliente)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [
@@ -53,15 +53,15 @@ async function crear(vehiculo) {
       vehiculo.serialMotor || null,
       vehiculo.tipoVehiculo || null,
       vehiculo.especificacionesBateria || null,
-      vehiculo.idCliente
-    ]
+      vehiculo.idCliente,
+    ],
   );
   return result.insertId;
 }
 
 async function actualizar(idVehiculo, vehiculo) {
   await pool.execute(
-    `UPDATE vehiculo SET
+    `UPDATE Vehiculo SET
       placa = ?,
       marca = ?,
       modelo = ?,
@@ -80,16 +80,13 @@ async function actualizar(idVehiculo, vehiculo) {
       vehiculo.tipoVehiculo || null,
       vehiculo.especificacionesBateria || null,
       vehiculo.idCliente,
-      idVehiculo
-    ]
+      idVehiculo,
+    ],
   );
 }
 
 async function eliminar(idVehiculo) {
-  await pool.execute(
-    `DELETE FROM vehiculo WHERE idVehiculo = ?`,
-    [idVehiculo]
-  );
+  await pool.execute(`DELETE FROM Vehiculo WHERE idVehiculo = ?`, [idVehiculo]);
 }
 
 module.exports = {
@@ -97,5 +94,5 @@ module.exports = {
   obtenerPorId,
   crear,
   actualizar,
-  eliminar
+  eliminar,
 };

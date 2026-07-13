@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+const pool = require("../config/db");
 
 async function listarTodos() {
   const [rows] = await pool.execute(
@@ -9,10 +9,10 @@ async function listarTodos() {
               WHEN r.stockActual <= r.stockMinimo THEN 'Stock Bajo'
               ELSE 'Disponible'
             END AS estado
-     FROM repuesto r
-     LEFT JOIN bateria b ON r.idRepuesto = b.idRepuesto
+     FROM Repuesto r
+     LEFT JOIN Bateria b ON r.idRepuesto = b.idRepuesto
      WHERE b.idRepuesto IS NULL
-     ORDER BY r.idRepuesto DESC`
+     ORDER BY r.idRepuesto DESC`,
   );
   return rows;
 }
@@ -20,9 +20,9 @@ async function listarTodos() {
 async function obtenerPorId(idRepuesto) {
   const [rows] = await pool.execute(
     `SELECT idRepuesto, nombre, categoria, precioUnitario, proveedor, stockActual, stockMinimo
-     FROM repuesto
+     FROM Repuesto
      WHERE idRepuesto = ?`,
-    [idRepuesto]
+    [idRepuesto],
   );
 
   return rows.length === 0 ? null : rows[0];
@@ -30,7 +30,7 @@ async function obtenerPorId(idRepuesto) {
 
 async function crear(repuesto) {
   const [result] = await pool.execute(
-    `INSERT INTO repuesto
+    `INSERT INTO Repuesto
      (nombre, categoria, precioUnitario, proveedor, stockActual, stockMinimo)
      VALUES (?, ?, ?, ?, ?, ?)`,
     [
@@ -39,15 +39,15 @@ async function crear(repuesto) {
       repuesto.precioUnitario || 0,
       repuesto.proveedor || null,
       repuesto.stockActual || 0,
-      repuesto.stockMinimo || 0
-    ]
+      repuesto.stockMinimo || 0,
+    ],
   );
   return result.insertId;
 }
 
 async function actualizar(idRepuesto, repuesto) {
   await pool.execute(
-    `UPDATE repuesto SET
+    `UPDATE Repuesto SET
       nombre = ?,
       categoria = ?,
       precioUnitario = ?,
@@ -62,16 +62,13 @@ async function actualizar(idRepuesto, repuesto) {
       repuesto.proveedor || null,
       repuesto.stockActual || 0,
       repuesto.stockMinimo || 0,
-      idRepuesto
-    ]
+      idRepuesto,
+    ],
   );
 }
 
 async function eliminar(idRepuesto) {
-  await pool.execute(
-    `DELETE FROM repuesto WHERE idRepuesto = ?`,
-    [idRepuesto]
-  );
+  await pool.execute(`DELETE FROM Repuesto WHERE idRepuesto = ?`, [idRepuesto]);
 }
 
 module.exports = {
@@ -79,5 +76,5 @@ module.exports = {
   obtenerPorId,
   crear,
   actualizar,
-  eliminar
+  eliminar,
 };
