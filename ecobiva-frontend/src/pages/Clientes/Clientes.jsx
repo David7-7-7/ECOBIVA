@@ -16,7 +16,7 @@ import {
   obtenerCliente,
   crearCliente,
   actualizarCliente,
-  eliminarCliente
+  eliminarCliente,
 } from "../../services/clienteService";
 
 export default function Clientes() {
@@ -73,9 +73,10 @@ export default function Clientes() {
     }
   };
 
-  const clientesFiltrados = clientes.filter((cliente) =>
-    cliente.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    cliente.documento?.includes(busqueda)
+  const clientesFiltrados = clientes.filter(
+    (cliente) =>
+      cliente.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
+      cliente.documento?.includes(busqueda),
   );
 
   return (
@@ -130,7 +131,9 @@ export default function Clientes() {
                   <ActionButtons
                     onView={async () => {
                       try {
-                        const clienteDetalle = await obtenerCliente(cliente.idCliente);
+                        const clienteDetalle = await obtenerCliente(
+                          cliente.idCliente,
+                        );
                         setClienteSeleccionado(clienteDetalle);
                         setDetalleOpen(true);
                       } catch (error) {

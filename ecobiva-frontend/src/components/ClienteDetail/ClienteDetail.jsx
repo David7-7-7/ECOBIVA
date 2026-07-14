@@ -3,157 +3,117 @@ import "./ClienteDetail.css";
 import DataField from "../DataField/DataField";
 import StatusBadge from "../StatusBadge/StatusBadge";
 
-export default function ClienteDetail({cliente}){
+export default function ClienteDetail({ cliente }) {
+  if (!cliente) return null;
 
-    if(!cliente) return null;
+  return (
+    <>
+      <section className="detailSection">
+        <h3>Información Personal</h3>
 
-    return(
+        <div className="detailGrid">
+          <DataField
+            label="Tipo de documento"
+            value={cliente.tipoDocumento || "-"}
+          />
 
-        <>
+          <DataField label="Documento" value={cliente.documento || "-"} />
 
-            <section className="detailSection">
+          <DataField label="Nombre completo" value={cliente.nombre || "-"} />
 
-                <h3>Información Personal</h3>
+          <DataField label="Teléfono" value={cliente.telefono || "-"} />
 
-                <div className="detailGrid">
+          <DataField label="Correo electrónico" value={cliente.correo || "-"} />
 
-                    <DataField
-                        label="Tipo Documento"
-                        value={cliente.tipoDocumento}
-                    />
+          <DataField label="Ciudad" value={cliente.ciudad || "-"} />
 
-                    <DataField
-                        label="Documento"
-                        value={cliente.documento}
-                    />
+          <DataField label="Dirección" value={cliente.direccion || "-"} />
 
-                    <DataField
-                        label="Nombre Completo"
-                        value={cliente.nombre}
-                    />
+          <DataField
+            label="Tipo de comunicación"
+            value={cliente.tipoComunicacion || "-"}
+          />
+        </div>
+      </section>
 
-                    <DataField
-                        label="Teléfono"
-                        value={cliente.telefono}
-                    />
+      <section className="detailSection">
+        <h3>Información General</h3>
 
-                    <DataField
-                        label="Correo"
-                        value={cliente.correo}
-                    />
+        <div className="detailGrid">
+          <div>
+            <span className="fieldTitle">Estado</span>
 
-                    <DataField
-                        label="Ciudad"
-                        value={cliente.ciudad}
-                    />
+            <StatusBadge status={cliente.estado} />
+          </div>
 
-                    <DataField
-                        label="Dirección"
-                        value={cliente.direccion}
-                    />
+          <DataField
+            label="Fecha de registro"
+            value={
+              cliente.fechaRegistro
+                ? new Date(cliente.fechaRegistro).toLocaleDateString()
+                : "-"
+            }
+          />
 
-                </div>
+          <DataField
+            label="Última visita"
+            value={cliente.ultimaVisita || "Sin visitas registradas"}
+          />
 
-            </section>
+          <DataField label="Órdenes registradas" value={cliente.ordenes ?? 0} />
 
-            <section className="detailSection">
+          <DataField label="Garantías activas" value={cliente.garantias ?? 0} />
 
-                <h3>Información General</h3>
+          <DataField
+            label="Puntos acumulados"
+            value={cliente.puntosAcumulados ?? 0}
+          />
+        </div>
+      </section>
 
-                <div className="detailGrid">
+      <section className="detailSection">
+        <h3>Vehículos Registrados</h3>
 
-                    <div>
+        <table>
+          <thead>
+            <tr>
+              <th>Placa</th>
 
-                        <span className="fieldTitle">
+              <th>Marca</th>
 
-                            Estado
+              <th>Modelo</th>
 
-                        </span>
+              <th>Tipo</th>
 
-                        <StatusBadge
-                            status={cliente.estado}
-                        />
+              <th>Estado</th>
+            </tr>
+          </thead>
 
-                    </div>
+          <tbody>
+            {(cliente.vehiculos || []).length > 0 ? (
+              cliente.vehiculos.map((vehiculo) => (
+                <tr key={vehiculo.idVehiculo}>
+                  <td>{vehiculo.placa}</td>
 
-                    <DataField
-                        label="Fecha Registro"
-                        value={cliente.fechaRegistro}
-                    />
+                  <td>{vehiculo.marca}</td>
 
-                    <DataField
-                        label="Última Visita"
-                        value={cliente.ultimaVisita}
-                    />
+                  <td>{vehiculo.modelo}</td>
 
-                    <DataField
-                        label="Órdenes Registradas"
-                        value={cliente.ordenes}
-                    />
+                  <td>{vehiculo.tipoVehiculo}</td>
 
-                    <DataField
-                        label="Garantías Activas"
-                        value={cliente.garantias}
-                    />
-
-                </div>
-
-            </section>
-
-            <section className="detailSection">
-
-                <h3>Vehículos Registrados</h3>
-
-                <table>
-
-                    <thead>
-
-                        <tr>
-
-                            <th>Placa</th>
-
-                            <th>Marca</th>
-
-                            <th>Modelo</th>
-
-                            <th>Estado</th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                        {
-
-                            (cliente.vehiculos || []).length > 0 ?
-                                cliente.vehiculos.map((v,index)=>(
-                                    <tr key={index}>
-                                        <td>{v.placa}</td>
-                                        <td>{v.marca}</td>
-                                        <td>{v.modelo}</td>
-                                        <td>
-                                            <StatusBadge
-                                                status={v.estado}
-                                            />
-                                        </td>
-                                    </tr>
-                                ))
-                                :
-                                <tr>
-                                    <td colSpan="4">No hay vehículos registrados.</td>
-                                </tr>
-
-                        }
-
-                    </tbody>
-
-                </table>
-
-            </section>
-
-        </>
-
-    )
-
+                  <td>
+                    <StatusBadge status={vehiculo.estado} />
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5">No hay vehículos registrados.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </section>
+    </>
+  );
 }

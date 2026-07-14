@@ -3,278 +3,214 @@ import "./ClienteModal.css";
 import { useEffect, useState } from "react";
 
 import Button from "../Button/Button";
-
 import Input from "../Input/Input";
 
-export default function ClienteModal({
+export default function ClienteModal({ open, clienteEditar, onClose, onSave }) {
+  const [cliente, setCliente] = useState({
+    tipoDocumento: "CC",
+    nombre: "",
+    documento: "",
+    correo: "",
+    telefono: "",
+    ciudad: "",
+    direccion: "",
+    tipoComunicacion: "Correo",
+  });
 
-    open,
+  const [errores, setErrores] = useState({});
 
-    clienteEditar,
+  useEffect(() => {
+    if (!open) return;
 
-    onClose,
+    if (clienteEditar) {
+      setCliente({
+        tipoDocumento: clienteEditar.tipoDocumento || "CC",
+        nombre: clienteEditar.nombre || "",
+        documento: clienteEditar.documento || "",
+        correo: clienteEditar.correo || "",
+        telefono: clienteEditar.telefono || "",
+        ciudad: clienteEditar.ciudad || "",
+        direccion: clienteEditar.direccion || "",
+        tipoComunicacion: clienteEditar.tipoComunicacion || "Correo",
+      });
 
-    onSave
-
-}){
-
-    const [cliente,setCliente]=useState({
-
-        nombre:"",
-
-        documento:"",
-
-        correo:"",
-
-        telefono:"",
-
-        direccion:"",
-
-        preferenciaNotificacion:"Correo"
-
-    });
-
-    const [errores,setErrores]=useState({});
-
-    useEffect(() => {
-        if (!open) return;
-
-        if (clienteEditar) {
-            setCliente({
-                nombre: clienteEditar.nombre || "",
-                documento: clienteEditar.documento || "",
-                correo: clienteEditar.correo || "",
-                telefono: clienteEditar.telefono || "",
-                direccion: clienteEditar.direccion || "",
-                preferenciaNotificacion: clienteEditar.preferenciaNotificacion || "Correo"
-            });
-            setErrores({});
-            return;
-        }
-
-        setCliente({
-            nombre:"",
-            documento:"",
-            correo:"",
-            telefono:"",
-            direccion:"",
-            preferenciaNotificacion:"Correo"
-        });
-        setErrores({});
-    }, [open, clienteEditar]);
-
-    if(!open) return null;
-
-    const validar=async ()=>{
-
-        let nuevo={};
-
-        if(cliente.nombre.trim()==="")
-            nuevo.nombre="Ingrese el nombre.";
-
-        if(cliente.documento.trim()==="")
-            nuevo.documento="Ingrese el documento.";
-
-        if(cliente.telefono.trim()==="")
-            nuevo.telefono="Ingrese el teléfono.";
-
-        if(cliente.correo.trim()==="")
-            nuevo.correo="Ingrese el correo.";
-        else if(
-            !/\S+@\S+\.\S+/.test(cliente.correo)
-        )
-            nuevo.correo="Correo inválido.";
-
-        setErrores(nuevo);
-
-        if (Object.keys(nuevo).length > 0) return;
-
-        if (onSave) {
-            await onSave(cliente);
-        }
-
-        onClose();
+      setErrores({});
+      return;
     }
 
-    return(
+    setCliente({
+      tipoDocumento: "CC",
+      nombre: "",
+      documento: "",
+      correo: "",
+      telefono: "",
+      ciudad: "",
+      direccion: "",
+      tipoComunicacion: "Correo",
+    });
 
-        <div className="modalOverlay">
+    setErrores({});
+  }, [open, clienteEditar]);
 
-            <div className="clienteModal">
+  if (!open) return null;
 
-                <div className="modalHeader">
+  const validar = async () => {
+    const nuevo = {};
 
-                    <h2>
+    if (cliente.nombre.trim() === "") nuevo.nombre = "Ingrese el nombre.";
 
-                        {clienteEditar ? "Editar Cliente" : "Registrar Cliente"}
+    if (cliente.documento.trim() === "")
+      nuevo.documento = "Ingrese el documento.";
 
-                    </h2>
+    if (cliente.telefono.trim() === "") nuevo.telefono = "Ingrese el teléfono.";
 
-                </div>
+    if (cliente.correo.trim() === "") nuevo.correo = "Ingrese el correo.";
+    else if (!/\S+@\S+\.\S+/.test(cliente.correo))
+      nuevo.correo = "Correo inválido.";
 
-                <div className="modalBody">
+    if (cliente.ciudad.trim() === "") nuevo.ciudad = "Ingrese la ciudad.";
 
-                    <Input
+    if (cliente.direccion.trim() === "")
+      nuevo.direccion = "Ingrese la dirección.";
 
-                        label="Nombre Completo"
+    setErrores(nuevo);
 
-                        required
+    if (Object.keys(nuevo).length > 0) return;
 
-                        value={cliente.nombre}
+    await onSave(cliente);
 
-                        error={errores.nombre}
+    onClose();
+  };
 
-                        onChange={(e)=>
-
-                            setCliente({
-
-                                ...cliente,
-
-                                nombre:e.target.value
-
-                            })
-
-                        }
-
-                    />
-
-                    <Input
-
-                        label="Documento"
-
-                        required
-
-                        value={cliente.documento}
-
-                        error={errores.documento}
-
-                        onChange={(e)=>
-
-                            setCliente({
-
-                                ...cliente,
-
-                                documento:e.target.value
-
-                            })
-
-                        }
-
-                    />
-
-                    <Input
-
-                        label="Correo"
-
-                        required
-
-                        value={cliente.correo}
-
-                        error={errores.correo}
-
-                        onChange={(e)=>
-
-                            setCliente({
-
-                                ...cliente,
-
-                                correo:e.target.value
-
-                            })
-
-                        }
-
-                    />
-
-                    <Input
-
-                        label="Teléfono"
-
-                        required
-
-                        value={cliente.telefono}
-
-                        error={errores.telefono}
-
-                        onChange={(e)=>
-
-                            setCliente({
-
-                                ...cliente,
-
-                                telefono:e.target.value
-
-                            })
-
-                        }
-
-                    />
-
-                    <Input
-
-                        label="Dirección"
-
-                        value={cliente.direccion}
-
-                        onChange={(e)=>
-
-                            setCliente({
-
-                                ...cliente,
-
-                                direccion:e.target.value
-
-                            })
-
-                        }
-
-                    />
-
-                    <Input
-                        label="Preferencia de notificación"
-                        value={cliente.preferenciaNotificacion}
-                        onChange={(e) =>
-                            setCliente({
-                                ...cliente,
-                                preferenciaNotificacion: e.target.value
-                            })
-                        }
-                    />
-
-                </div>
-
-                <div className="modalFooter">
-
-                    <Button
-
-                        variant="secondary"
-
-                        onClick={onClose}
-
-                    >
-
-                        Cancelar
-
-                    </Button>
-
-                    <Button
-
-                        variant="primary"
-
-                        onClick={validar}
-
-                    >
-
-                        Guardar
-
-                    </Button>
-
-                </div>
-
-            </div>
-
+  return (
+    <div className="modalOverlay">
+      <div className="clienteModal">
+        <div className="modalHeader">
+          <h2>{clienteEditar ? "Editar Cliente" : "Registrar Cliente"}</h2>
         </div>
 
-    )
+        <div className="modalBody">
+          <label>Tipo de documento</label>
 
+          <select
+            value={cliente.tipoDocumento}
+            onChange={(e) =>
+              setCliente({
+                ...cliente,
+                tipoDocumento: e.target.value,
+              })
+            }
+          >
+            <option value="CC">Cédula de ciudadanía</option>
+            <option value="CE">Cédula de extranjería</option>
+            <option value="TI">Tarjeta de identidad</option>
+            <option value="NIT">NIT</option>
+            <option value="PAS">Pasaporte</option>
+          </select>
+
+          <Input
+            label="Documento"
+            required
+            value={cliente.documento}
+            error={errores.documento}
+            onChange={(e) =>
+              setCliente({
+                ...cliente,
+                documento: e.target.value,
+              })
+            }
+          />
+
+          <Input
+            label="Nombre Completo"
+            required
+            value={cliente.nombre}
+            error={errores.nombre}
+            onChange={(e) =>
+              setCliente({
+                ...cliente,
+                nombre: e.target.value,
+              })
+            }
+          />
+
+          <Input
+            label="Correo"
+            required
+            value={cliente.correo}
+            error={errores.correo}
+            onChange={(e) =>
+              setCliente({
+                ...cliente,
+                correo: e.target.value,
+              })
+            }
+          />
+
+          <Input
+            label="Teléfono"
+            required
+            value={cliente.telefono}
+            error={errores.telefono}
+            onChange={(e) =>
+              setCliente({
+                ...cliente,
+                telefono: e.target.value,
+              })
+            }
+          />
+
+          <Input
+            label="Ciudad"
+            value={cliente.ciudad}
+            error={errores.ciudad}
+            onChange={(e) =>
+              setCliente({
+                ...cliente,
+                ciudad: e.target.value,
+              })
+            }
+          />
+
+          <Input
+            label="Dirección"
+            value={cliente.direccion}
+            error={errores.direccion}
+            onChange={(e) =>
+              setCliente({
+                ...cliente,
+                direccion: e.target.value,
+              })
+            }
+          />
+
+          <label>Tipo de comunicación</label>
+
+          <select
+            value={cliente.tipoComunicacion}
+            onChange={(e) =>
+              setCliente({
+                ...cliente,
+                tipoComunicacion: e.target.value,
+              })
+            }
+          >
+            <option value="Correo">Correo electrónico</option>
+            <option value="WhatsApp">WhatsApp</option>
+            <option value="Llamada">Llamada</option>
+          </select>
+        </div>
+
+        <div className="modalFooter">
+          <Button variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+
+          <Button variant="primary" onClick={validar}>
+            Guardar
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
