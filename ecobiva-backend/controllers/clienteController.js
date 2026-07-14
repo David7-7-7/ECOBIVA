@@ -168,6 +168,31 @@ async function eliminar(req, res) {
     });
   }
 }
+async function reactivar(req, res) {
+  const { id } = req.params;
+
+  try {
+    const cliente = await clienteDao.obtenerPorId(id);
+
+    if (!cliente) {
+      return res.status(404).json({
+        error: "Cliente no encontrado",
+      });
+    }
+
+    await clienteDao.reactivar(id);
+
+    return res.json({
+      mensaje: "Cliente reactivado correctamente",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      error: "Error interno del servidor",
+    });
+  }
+}
 
 module.exports = {
   listar,
@@ -175,4 +200,5 @@ module.exports = {
   crear,
   actualizar,
   eliminar,
+  reactivar,
 };

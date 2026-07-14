@@ -32,10 +32,10 @@ async function obtenerVehiculosPorCliente(idCliente) {
       marca,
       modelo,
       anio,
-      serialMotor,
+      color,
       tipoVehiculo,
-      especificacionesBateria,
-      idCliente
+      idCliente,
+      estado
     FROM Vehiculo
     WHERE idCliente = ?
       AND estado = 1
@@ -121,7 +121,7 @@ async function eliminar(idCliente) {
     UPDATE Cliente
     SET estado = 0
     WHERE idCliente = ?
-  `,
+    `,
     [idCliente],
   );
 
@@ -131,7 +131,29 @@ async function eliminar(idCliente) {
     UPDATE Vehiculo
     SET estado = 0
     WHERE idCliente = ?
-  `,
+    `,
+    [idCliente],
+  );
+}
+
+async function reactivar(idCliente) {
+  // Reactivar cliente
+  await pool.execute(
+    `
+    UPDATE Cliente
+    SET estado = 1
+    WHERE idCliente = ?
+    `,
+    [idCliente],
+  );
+
+  // Reactivar vehículos asociados
+  await pool.execute(
+    `
+    UPDATE Vehiculo
+    SET estado = 1
+    WHERE idCliente = ?
+    `,
     [idCliente],
   );
 }
@@ -143,4 +165,5 @@ module.exports = {
   crear,
   actualizar,
   eliminar,
+  reactivar,
 };

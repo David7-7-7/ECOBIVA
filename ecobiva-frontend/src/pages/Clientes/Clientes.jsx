@@ -17,6 +17,7 @@ import {
   crearCliente,
   actualizarCliente,
   eliminarCliente,
+  reactivarCliente,
 } from "../../services/clienteService";
 
 export default function Clientes() {
@@ -145,10 +146,27 @@ export default function Clientes() {
                       setClienteEditar(cliente);
                       setAbrirModal(true);
                     }}
-                    onDelete={() => {
-                      setClienteSeleccionado(cliente);
-                      setConfirmDelete(true);
-                    }}
+                    onDelete={
+                      cliente.estado === 1
+                        ? () => {
+                            setClienteSeleccionado(cliente);
+                            setConfirmDelete(true);
+                          }
+                        : undefined
+                    }
+                    onRestore={
+                      cliente.estado === 0
+                        ? async () => {
+                            try {
+                              await reactivarCliente(cliente.idCliente);
+                              await cargarClientes();
+                            } catch (error) {
+                              console.error(error);
+                              alert("No fue posible reactivar el cliente");
+                            }
+                          }
+                        : undefined
+                    }
                   />
                 </td>
               </tr>
@@ -169,8 +187,8 @@ export default function Clientes() {
 
       <ConfirmModal
         open={confirmDelete}
-        title="Eliminar Cliente"
-        message="¿Está seguro de eliminar este cliente? Esta acción eliminará el cliente de forma permanente."
+        title="Desactivar Cliente"
+        message="¿Está seguro de desactivar este cliente? Esta acción eliminará el cliente."
         onClose={() => setConfirmDelete(false)}
         onConfirm={confirmarEliminarCliente}
       />

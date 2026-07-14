@@ -28,5 +28,9 @@ router.delete(
   verificarRol(["Admin", "Asesor"]),
   vehiculoController.eliminar,
 );
-
+router.put(
+  "/:id/reactivar",
+  verificarRol(["Admin", "Asesor"]),
+  vehiculoController.reactivar,
+);
 module.exports = router;

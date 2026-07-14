@@ -81,3 +81,13 @@ background:#dc2626;
 color:white;
 
 }
+
+.accion.restaurar{
+    background:#dcfce7;
+    color:#15803d;
+}
+
+.accion.restaurar:hover{
+    background:#22c55e;
+    color:white;
+}

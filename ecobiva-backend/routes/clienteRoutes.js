@@ -23,6 +23,11 @@ router.put(
   verificarRol(["Admin", "Asesor"]),
   clienteController.actualizar,
 );
+router.patch(
+  "/:id/reactivar",
+  verificarRol(["Admin", "Asesor"]),
+  clienteController.reactivar,
+);
 router.delete(
   "/:id",
   verificarRol(["Admin", "Asesor"]),

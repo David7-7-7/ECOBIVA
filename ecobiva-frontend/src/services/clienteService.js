@@ -2,45 +2,40 @@ import api from "../api/api";
 
 // Obtener todos
 export const obtenerClientes = async () => {
+  const { data } = await api.get("/clientes");
 
-    const { data } = await api.get("/clientes");
-
-    return data;
-
+  return data;
 };
 
 // Obtener uno
 export const obtenerCliente = async (id) => {
+  const { data } = await api.get(`/clientes/${id}`);
 
-    const { data } = await api.get(`/clientes/${id}`);
-
-    return data;
-
+  return data;
 };
 
 // Crear
 export const crearCliente = async (cliente) => {
+  const { data } = await api.post("/clientes", cliente);
 
-    const { data } = await api.post("/clientes", cliente);
-
-    return data;
-
+  return data;
 };
 
 // Actualizar
 export const actualizarCliente = async (id, cliente) => {
+  const { data } = await api.put(`/clientes/${id}`, cliente);
 
-    const { data } = await api.put(`/clientes/${id}`, cliente);
-
-    return data;
-
+  return data;
 };
 
 // Eliminar permanentemente
 export const eliminarCliente = async (id) => {
+  const { data } = await api.delete(`/clientes/${id}`);
 
-    const { data } = await api.delete(`/clientes/${id}`);
+  return data;
+};
 
-    return data;
-
+export const reactivarCliente = async (id) => {
+  const { data } = await api.patch(`/clientes/${id}/reactivar`);
+  return data;
 };
