@@ -59,6 +59,8 @@ export default function AppRoutes() {
 
           <Route path="/diagnosticos" element={<Diagnosticos />} />
 
+          <Route path="/diagnosticos/:idOrden" element={<Diagnosticos />} />
+
           <Route path="/reportes" element={<Reportes />} />
 
           <Route path="/configuracion" element={<Configuracion />} />

@@ -12,7 +12,7 @@ CREATE TABLE `AlertaStock` (
   PRIMARY KEY (`idAlerta`),
   KEY `idRepuesto` (`idRepuesto`),
   CONSTRAINT `AlertaStock_ibfk_1` FOREIGN KEY (`idRepuesto`) REFERENCES `Repuesto` (`idRepuesto`)
-) ENGINE = InnoDB AUTO_INCREMENT = 3 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `Bateria` (
   `idRepuesto` int NOT NULL,
@@ -45,12 +45,13 @@ CREATE TABLE `Cliente` (
   `puntosAcumulados` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`idCliente`),
   UNIQUE KEY `documento` (`documento`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 10 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `Diagnostico` (
   `idDiagnostico` int NOT NULL AUTO_INCREMENT,
   `checklist` json DEFAULT NULL,
   `tipoDiagnostico` enum('superficial', 'profundo') NOT NULL DEFAULT 'superficial',
+  `nivelBateria` int DEFAULT NULL,
   `costoDiagnostico` decimal(10, 2) NOT NULL DEFAULT '0.00',
   `subtotalManoObra` decimal(10, 2) NOT NULL DEFAULT '0.00',
   `subtotalRepuestos` decimal(10, 2) NOT NULL DEFAULT '0.00',
@@ -60,7 +61,7 @@ CREATE TABLE `Diagnostico` (
   PRIMARY KEY (`idDiagnostico`),
   UNIQUE KEY `idOrdenServicio` (`idOrdenServicio`),
   CONSTRAINT `Diagnostico_ibfk_1` FOREIGN KEY (`idOrdenServicio`) REFERENCES `OrdenServicio` (`idOrden`)
-) ENGINE = InnoDB AUTO_INCREMENT = 3 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 10 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `DiagnosticoRepuesto` (
   `idDiagnosticoRepuesto` int NOT NULL AUTO_INCREMENT,
@@ -91,7 +92,7 @@ CREATE TABLE `Empleado` (
   KEY `idx_empleado_estado` (`estadoLaboral`),
   KEY `idx_empleado_nombre` (`nombre`),
   CONSTRAINT `CHK_TARIFA_POSITIVA` CHECK ((`tarifaHora` >= 0))
-) ENGINE = InnoDB AUTO_INCREMENT = 13 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 22 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `EvidenciaFoto` (
   `idFoto` int NOT NULL AUTO_INCREMENT,
@@ -100,7 +101,7 @@ CREATE TABLE `EvidenciaFoto` (
   PRIMARY KEY (`idFoto`),
   KEY `idEvidencia` (`idEvidencia`),
   CONSTRAINT `EvidenciaFoto_ibfk_1` FOREIGN KEY (`idEvidencia`) REFERENCES `EvidenciaIngreso` (`idEvidencia`)
-) ENGINE = InnoDB AUTO_INCREMENT = 2 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `EvidenciaIngreso` (
   `idEvidencia` int NOT NULL AUTO_INCREMENT,
@@ -110,7 +111,7 @@ CREATE TABLE `EvidenciaIngreso` (
   PRIMARY KEY (`idEvidencia`),
   KEY `idVehiculo` (`idVehiculo`),
   CONSTRAINT `EvidenciaIngreso_ibfk_1` FOREIGN KEY (`idVehiculo`) REFERENCES `Vehiculo` (`idVehiculo`)
-) ENGINE = InnoDB AUTO_INCREMENT = 2 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `Factura` (
   `idFactura` int NOT NULL AUTO_INCREMENT,
@@ -134,7 +135,7 @@ CREATE TABLE `Factura` (
   KEY `idUsuarioCreador` (`idUsuarioCreador`),
   CONSTRAINT `Factura_ibfk_1` FOREIGN KEY (`idOrdenServicio`) REFERENCES `OrdenServicio` (`idOrden`),
   CONSTRAINT `Factura_ibfk_2` FOREIGN KEY (`idUsuarioCreador`) REFERENCES `Usuario` (`idUsuario`)
-) ENGINE = InnoDB AUTO_INCREMENT = 2 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `FirmaDigital` (
   `idFirma` int NOT NULL AUTO_INCREMENT,
@@ -146,7 +147,7 @@ CREATE TABLE `FirmaDigital` (
   PRIMARY KEY (`idFirma`),
   KEY `idOrden` (`idOrden`),
   CONSTRAINT `FirmaDigital_ibfk_1` FOREIGN KEY (`idOrden`) REFERENCES `OrdenServicio` (`idOrden`)
-) ENGINE = InnoDB AUTO_INCREMENT = 2 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `HistorialCargo` (
   `idHistorial` int NOT NULL AUTO_INCREMENT,
@@ -161,7 +162,7 @@ CREATE TABLE `HistorialCargo` (
   KEY `FK_HistorialCargo_Usuario` (`idUsuario`),
   CONSTRAINT `FK_HistorialCargo_Usuario` FOREIGN KEY (`idUsuario`) REFERENCES `Usuario` (`idUsuario`),
   CONSTRAINT `HistorialCargo_ibfk_1` FOREIGN KEY (`idEmpleado`) REFERENCES `Empleado` (`idEmpleado`)
-) ENGINE = InnoDB AUTO_INCREMENT = 2 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `HistorialEstado` (
   `idHistorial` int NOT NULL AUTO_INCREMENT,
@@ -176,7 +177,7 @@ CREATE TABLE `HistorialEstado` (
   KEY `idOrdenServicio` (`idOrdenServicio`),
   CONSTRAINT `HistorialEstado_ibfk_1` FOREIGN KEY (`usuarioId`) REFERENCES `Usuario` (`idUsuario`),
   CONSTRAINT `HistorialEstado_ibfk_2` FOREIGN KEY (`idOrdenServicio`) REFERENCES `OrdenServicio` (`idOrden`)
-) ENGINE = InnoDB AUTO_INCREMENT = 16 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 42 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `LogAuditoria` (
   `idLog` int NOT NULL AUTO_INCREMENT,
@@ -189,7 +190,7 @@ CREATE TABLE `LogAuditoria` (
   PRIMARY KEY (`idLog`),
   KEY `idUsuario` (`idUsuario`),
   CONSTRAINT `LogAuditoria_ibfk_1` FOREIGN KEY (`idUsuario`) REFERENCES `Usuario` (`idUsuario`)
-) ENGINE = InnoDB AUTO_INCREMENT = 45 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 79 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `MovimientoKardex` (
   `idMovimiento` int NOT NULL AUTO_INCREMENT,
@@ -206,7 +207,7 @@ CREATE TABLE `MovimientoKardex` (
   CONSTRAINT `MovimientoKardex_ibfk_1` FOREIGN KEY (`idRepuesto`) REFERENCES `Repuesto` (`idRepuesto`),
   CONSTRAINT `MovimientoKardex_ibfk_2` FOREIGN KEY (`idOrdenServicio`) REFERENCES `OrdenServicio` (`idOrden`),
   CONSTRAINT `MovimientoKardex_ibfk_3` FOREIGN KEY (`idUsuario`) REFERENCES `Usuario` (`idUsuario`)
-) ENGINE = InnoDB AUTO_INCREMENT = 2 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `Nomina` (
   `idNomina` int NOT NULL AUTO_INCREMENT,
@@ -223,7 +224,7 @@ CREATE TABLE `Nomina` (
 `periodoFin`),
   KEY `idEmpleado` (`idEmpleado`),
   CONSTRAINT `Nomina_ibfk_1` FOREIGN KEY (`idEmpleado`) REFERENCES `Empleado` (`idEmpleado`)
-) ENGINE = InnoDB AUTO_INCREMENT = 2 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `OrdenGarantia` (
   `idOrdenGarantia` int NOT NULL AUTO_INCREMENT,
@@ -235,7 +236,7 @@ CREATE TABLE `OrdenGarantia` (
   PRIMARY KEY (`idOrdenGarantia`),
   KEY `ordenOrigenId` (`ordenOrigenId`),
   CONSTRAINT `OrdenGarantia_ibfk_1` FOREIGN KEY (`ordenOrigenId`) REFERENCES `OrdenServicio` (`idOrden`)
-) ENGINE = InnoDB AUTO_INCREMENT = 2 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `OrdenServicio` (
   `idOrden` int NOT NULL AUTO_INCREMENT,
@@ -244,6 +245,7 @@ CREATE TABLE `OrdenServicio` (
   `estado` varchar(50) NOT NULL DEFAULT 'recibido',
   `kilometrajeIngreso` int DEFAULT NULL,
   `nivelBateriaIngreso` int DEFAULT NULL,
+  `motivoIngreso` varchar(500) DEFAULT NULL,
   `idCliente` int NOT NULL,
   `idVehiculo` int NOT NULL,
   `idTecnico` int DEFAULT NULL,
@@ -258,7 +260,7 @@ CREATE TABLE `OrdenServicio` (
   CONSTRAINT `OrdenServicio_ibfk_2` FOREIGN KEY (`idVehiculo`) REFERENCES `Vehiculo` (`idVehiculo`),
   CONSTRAINT `OrdenServicio_ibfk_3` FOREIGN KEY (`idTecnico`) REFERENCES `Usuario` (`idUsuario`),
   CONSTRAINT `OrdenServicio_ibfk_4` FOREIGN KEY (`idAsesor`) REFERENCES `Usuario` (`idUsuario`)
-) ENGINE = InnoDB AUTO_INCREMENT = 9 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 16 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `PerfilTecnico` (
   `idPerfilTecnico` int NOT NULL AUTO_INCREMENT,
@@ -269,7 +271,7 @@ CREATE TABLE `PerfilTecnico` (
   PRIMARY KEY (`idPerfilTecnico`),
   UNIQUE KEY `idEmpleado` (`idEmpleado`),
   CONSTRAINT `PerfilTecnico_ibfk_1` FOREIGN KEY (`idEmpleado`) REFERENCES `Empleado` (`idEmpleado`)
-) ENGINE = InnoDB AUTO_INCREMENT = 2 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `Permiso` (
   `idPermiso` int NOT NULL AUTO_INCREMENT,
@@ -279,14 +281,14 @@ CREATE TABLE `Permiso` (
   PRIMARY KEY (`idPermiso`),
   UNIQUE KEY `uq_modulo_accion` (`modulo`,
 `accion`)
-) ENGINE = InnoDB AUTO_INCREMENT = 21 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 45 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `PreguntaSeguridad` (
   `idPregunta` int NOT NULL AUTO_INCREMENT,
   `textoPregunta` varchar(255) NOT NULL,
   PRIMARY KEY (`idPregunta`),
   UNIQUE KEY `textoPregunta` (`textoPregunta`)
-) ENGINE = InnoDB AUTO_INCREMENT = 13 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 49 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `PuntoFidelidad` (
   `idMovimiento` int NOT NULL AUTO_INCREMENT,
@@ -301,7 +303,7 @@ CREATE TABLE `PuntoFidelidad` (
   KEY `idOrden` (`idOrden`),
   CONSTRAINT `PuntoFidelidad_ibfk_1` FOREIGN KEY (`idCliente`) REFERENCES `Cliente` (`idCliente`),
   CONSTRAINT `PuntoFidelidad_ibfk_2` FOREIGN KEY (`idOrden`) REFERENCES `OrdenServicio` (`idOrden`)
-) ENGINE = InnoDB AUTO_INCREMENT = 2 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `RecordatorioPreventivo` (
   `idRecordatorio` int NOT NULL AUTO_INCREMENT,
@@ -315,7 +317,7 @@ CREATE TABLE `RecordatorioPreventivo` (
   KEY `idVehiculo` (`idVehiculo`),
   CONSTRAINT `RecordatorioPreventivo_ibfk_1` FOREIGN KEY (`idCliente`) REFERENCES `Cliente` (`idCliente`),
   CONSTRAINT `RecordatorioPreventivo_ibfk_2` FOREIGN KEY (`idVehiculo`) REFERENCES `Vehiculo` (`idVehiculo`)
-) ENGINE = InnoDB AUTO_INCREMENT = 3 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `RegistroHoras` (
   `idRegistro` int NOT NULL AUTO_INCREMENT,
@@ -328,7 +330,7 @@ CREATE TABLE `RegistroHoras` (
   KEY `idOrdenServicio` (`idOrdenServicio`),
   CONSTRAINT `RegistroHoras_ibfk_1` FOREIGN KEY (`idEmpleado`) REFERENCES `Empleado` (`idEmpleado`),
   CONSTRAINT `RegistroHoras_ibfk_2` FOREIGN KEY (`idOrdenServicio`) REFERENCES `OrdenServicio` (`idOrden`)
-) ENGINE = InnoDB AUTO_INCREMENT = 5 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `Repuesto` (
   `idRepuesto` int NOT NULL AUTO_INCREMENT,
@@ -338,8 +340,9 @@ CREATE TABLE `Repuesto` (
   `proveedor` varchar(100) DEFAULT NULL,
   `stockActual` int NOT NULL DEFAULT '0',
   `stockMinimo` int NOT NULL DEFAULT '0',
+  `activo` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`idRepuesto`)
-) ENGINE = InnoDB AUTO_INCREMENT = 9 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 23 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `Rol` (
   `idRol` int NOT NULL AUTO_INCREMENT,
@@ -347,7 +350,7 @@ CREATE TABLE `Rol` (
   `descripcion` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`idRol`),
   UNIQUE KEY `nombreRol` (`nombreRol`)
-) ENGINE = InnoDB AUTO_INCREMENT = 9 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 33 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `RolPermiso` (
   `idRol` int NOT NULL,
@@ -372,7 +375,7 @@ CREATE TABLE `TerminoGarantia` (
   `version` varchar(20) DEFAULT NULL,
   `vigente` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`idTermino`)
-) ENGINE = InnoDB AUTO_INCREMENT = 4 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `TokenRecuperacion` (
   `idToken` int NOT NULL AUTO_INCREMENT,
@@ -397,7 +400,7 @@ CREATE TABLE `Usuario` (
   UNIQUE KEY `correo` (`correo`),
   KEY `idEmpleado` (`idEmpleado`),
   CONSTRAINT `Usuario_ibfk_1` FOREIGN KEY (`idEmpleado`) REFERENCES `Empleado` (`idEmpleado`)
-) ENGINE = InnoDB AUTO_INCREMENT = 13 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 21 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `UsuarioPreguntaSeguridad` (
   `idUsuarioPregunta` int NOT NULL AUTO_INCREMENT,
@@ -410,7 +413,7 @@ CREATE TABLE `UsuarioPreguntaSeguridad` (
   KEY `idPregunta` (`idPregunta`),
   CONSTRAINT `UsuarioPreguntaSeguridad_ibfk_1` FOREIGN KEY (`idUsuario`) REFERENCES `Usuario` (`idUsuario`),
   CONSTRAINT `UsuarioPreguntaSeguridad_ibfk_2` FOREIGN KEY (`idPregunta`) REFERENCES `PreguntaSeguridad` (`idPregunta`)
-) ENGINE = InnoDB AUTO_INCREMENT = 32 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 56 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `UsuarioRol` (
   `idUsuarioRol` int NOT NULL AUTO_INCREMENT,
@@ -426,7 +429,7 @@ CREATE TABLE `UsuarioRol` (
   CONSTRAINT `UsuarioRol_ibfk_1` FOREIGN KEY (`idUsuario`) REFERENCES `Usuario` (`idUsuario`),
   CONSTRAINT `UsuarioRol_ibfk_2` FOREIGN KEY (`idRol`) REFERENCES `Rol` (`idRol`),
   CONSTRAINT `UsuarioRol_ibfk_3` FOREIGN KEY (`asignadoPor`) REFERENCES `Usuario` (`idUsuario`)
-) ENGINE = InnoDB AUTO_INCREMENT = 18 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 26 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `Vehiculo` (
   `idVehiculo` int NOT NULL AUTO_INCREMENT,
@@ -444,4 +447,4 @@ CREATE TABLE `Vehiculo` (
   UNIQUE KEY `placa` (`placa`),
   KEY `idCliente` (`idCliente`),
   CONSTRAINT `Vehiculo_ibfk_1` FOREIGN KEY (`idCliente`) REFERENCES `Cliente` (`idCliente`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB AUTO_INCREMENT = 12 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;

@@ -1,9 +1,8 @@
 const pool = require("../config/db");
 
 async function crear({ observaciones, idVehiculo }) {
-
-    const sql = `
-        INSERT INTO evidenciaingreso
+  const sql = `
+        INSERT INTO EvidenciaIngreso
         (
             observaciones,
             idVehiculo
@@ -11,134 +10,113 @@ async function crear({ observaciones, idVehiculo }) {
         VALUES (?,?)
     `;
 
-    const [resultado] = await pool.query(sql, [
-        observaciones,
-        idVehiculo
-    ]);
+  const [resultado] = await pool.query(sql, [observaciones, idVehiculo]);
 
-    return obtenerPorId(resultado.insertId);
+  return obtenerPorId(resultado.insertId);
 }
 
-async function obtenerPorId(idEvidencia){
-
-    const [rows] = await pool.query(
-        `
+async function obtenerPorId(idEvidencia) {
+  const [rows] = await pool.query(
+    `
         SELECT *
-        FROM evidenciaingreso
+        FROM EvidenciaIngreso
         WHERE idEvidencia=?
         `,
-        [idEvidencia]
-    );
+    [idEvidencia],
+  );
 
-    return rows[0];
+  return rows[0];
 }
 
-async function obtenerPorVehiculo(idVehiculo){
-
-    const [rows]=await pool.query(
-        `
+async function obtenerPorVehiculo(idVehiculo) {
+  const [rows] = await pool.query(
+    `
         SELECT *
-        FROM evidenciaingreso
+        FROM EvidenciaIngreso
         WHERE idVehiculo=?
         ORDER BY fechaRegistro DESC
         `,
-        [idVehiculo]
-    );
+    [idVehiculo],
+  );
 
-    return rows;
+  return rows;
 }
 
-async function actualizar(idEvidencia,observaciones){
-
-    await pool.query(
-        `
-        UPDATE evidenciaingreso
+async function actualizar(idEvidencia, observaciones) {
+  await pool.query(
+    `
+        UPDATE EvidenciaIngreso
         SET observaciones=?
         WHERE idEvidencia=?
         `,
-        [
-            observaciones,
-            idEvidencia
-        ]
-    );
+    [observaciones, idEvidencia],
+  );
 
-    return obtenerPorId(idEvidencia);
-
+  return obtenerPorId(idEvidencia);
 }
 
-async function eliminar(idEvidencia){
-
-    const [resultado]=await pool.query(
-        `
-        DELETE FROM evidenciaingreso
+async function eliminar(idEvidencia) {
+  const [resultado] = await pool.query(
+    `
+        DELETE FROM EvidenciaIngreso
         WHERE idEvidencia=?
         `,
-        [idEvidencia]
-    );
+    [idEvidencia],
+  );
 
-    return resultado.affectedRows;
-
+  return resultado.affectedRows;
 }
 
-async function agregarFoto(idEvidencia,url){
-
-    const [resultado]=await pool.query(
-        `
-        INSERT INTO evidenciafoto
+async function agregarFoto(idEvidencia, url) {
+  const [resultado] = await pool.query(
+    `
+        INSERT INTO EvidenciaFoto
         (
             idEvidencia,
             url
         )
         VALUES (?,?)
         `,
-        [
-            idEvidencia,
-            url
-        ]
-    );
+    [idEvidencia, url],
+  );
 
-    return resultado.insertId;
-
+  return resultado.insertId;
 }
 
-async function listarFotos(idEvidencia){
-
-    const [rows]=await pool.query(
-        `
+async function listarFotos(idEvidencia) {
+  const [rows] = await pool.query(
+    `
         SELECT *
-        FROM evidenciafoto
+        FROM EvidenciaFoto
         WHERE idEvidencia=?
         ORDER BY idFoto
         `,
-        [idEvidencia]
-    );
+    [idEvidencia],
+  );
 
-    return rows;
-
+  return rows;
 }
 
-async function eliminarFoto(idFoto){
-
-    const [resultado]=await pool.query(
-        `
+async function eliminarFoto(idFoto) {
+  const [resultado] = await pool.query(
+    `
         DELETE
-        FROM evidenciafoto
+        FROM EvidenciaFoto
         WHERE idFoto=?
         `,
-        [idFoto]
-    );
+    [idFoto],
+  );
 
-    return resultado.affectedRows;
-
+  return resultado.affectedRows;
 }
 
-module.exports={
-    crear,
-    obtenerPorId,
-    obtenerPorVehiculo,
-    actualizar,
-    eliminar,
-    agregarFoto,
-    listarFotos,
-    eliminarFoto
+module.exports = {
+  crear,
+  obtenerPorId,
+  obtenerPorVehiculo,
+  actualizar,
+  eliminar,
+  agregarFoto,
+  listarFotos,
+  eliminarFoto,
 };
