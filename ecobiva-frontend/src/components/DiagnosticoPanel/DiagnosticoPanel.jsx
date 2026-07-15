@@ -9,9 +9,6 @@ import {
   enviarDiagnosticoAAprobacion,
 } from "../../services/diagnosticoService";
 
-// El checklist se guarda en el backend como un objeto JSON libre
-// (item -> observación). Acá lo editamos como una lista de filas
-// clave/valor para no forzar una estructura rígida que el backend no pide.
 function checklistAFilas(checklist) {
   if (!checklist || typeof checklist !== "object") return [];
   return Object.entries(checklist).map(([item, observacion]) => ({
@@ -23,44 +20,58 @@ function checklistAFilas(checklist) {
 function filasAChecklist(filas) {
   const checklist = {};
   filas.forEach(({ item, observacion }) => {
-    if (item?.trim()) checklist[item.trim()] = observacion?.trim() || "";
+    if (item?.trim()) {
+      checklist[item.trim()] = observacion?.trim() || "";
+    }
   });
   return checklist;
 }
 
 export default function DiagnosticoPanel({ orden, onOrdenActualizada }) {
   const { tieneAlgunRol } = useAuth();
+
   const puedeEditar = tieneAlgunRol(["Admin", "Tecnico"]);
 
   const [diagnostico, setDiagnostico] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [tipoDiagnostico, setTipoDiagnostico] = useState("superficial");
+  const [nivelBateria, setNivelBateria] = useState("");
   const [costoDiagnostico, setCostoDiagnostico] = useState("");
   const [filas, setFilas] = useState([{ item: "", observacion: "" }]);
   const [guardando, setGuardando] = useState(false);
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
+    if (!orden?.idOrden) return;
+
     cargar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orden.idOrden]);
+  }, [orden]);
 
   const cargar = async () => {
     setCargando(true);
+
     try {
       const data = await obtenerDiagnostico(orden.idOrden);
+
       setDiagnostico(data);
       setTipoDiagnostico(data.tipoDiagnostico || "superficial");
+      setNivelBateria(data.nivelBateria ?? "");
       setCostoDiagnostico(data.costoDiagnostico ?? "");
+
       const filasExistentes = checklistAFilas(data.checklist);
+
       setFilas(
         filasExistentes.length > 0
           ? filasExistentes
           : [{ item: "", observacion: "" }],
       );
     } catch (error) {
-      // 404 = todavía no existe diagnóstico para esta orden, es un estado normal.
-      setDiagnostico(null);
+      if (error.response?.status === 404) {
+        setDiagnostico(null);
+      } else {
+        console.error(error);
+        alert("No fue posible cargar el diagnóstico.");
+      }
     } finally {
       setCargando(false);
     }
@@ -75,28 +86,38 @@ export default function DiagnosticoPanel({ orden, onOrdenActualizada }) {
     );
   };
 
-  const agregarFila = () =>
+  const agregarFila = () => {
     setFilas((prev) => [...prev, { item: "", observacion: "" }]);
+  };
 
-  const quitarFila = (index) =>
+  const quitarFila = (index) => {
     setFilas((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const guardar = async () => {
     setGuardando(true);
+
     try {
       const payload = {
         checklist: filasAChecklist(filas),
         tipoDiagnostico,
+        nivelBateria: nivelBateria === "" ? null : Number(nivelBateria),
         costoDiagnostico:
           tipoDiagnostico === "profundo" ? Number(costoDiagnostico || 0) : 0,
       };
-      const actualizado = await guardarDiagnostico(orden.idOrden, payload);
-      setDiagnostico(actualizado);
-      if (onOrdenActualizada) await onOrdenActualizada();
+
+      await guardarDiagnostico(orden.idOrden, payload);
+
+      await cargar();
+
+      if (onOrdenActualizada) {
+        await onOrdenActualizada();
+      }
     } catch (error) {
       console.error(error);
+
       alert(
-        error?.response?.data?.error ||
+        error?.response?.data?.error ??
           "No fue posible guardar el diagnóstico.",
       );
     } finally {
@@ -107,21 +128,27 @@ export default function DiagnosticoPanel({ orden, onOrdenActualizada }) {
   const enviarAAprobacion = async () => {
     if (
       !window.confirm(
-        "Al enviar a aprobación el diagnóstico queda bloqueado y ya no se podrá editar. ¿Continuar?",
+        "Al enviar a aprobación el diagnóstico quedará bloqueado. ¿Desea continuar?",
       )
-    )
+    ) {
       return;
+    }
 
     setEnviando(true);
+
     try {
       await enviarDiagnosticoAAprobacion(orden.idOrden);
+
       await cargar();
-      if (onOrdenActualizada) await onOrdenActualizada();
+
+      if (onOrdenActualizada) {
+        await onOrdenActualizada();
+      }
     } catch (error) {
       console.error(error);
+
       alert(
-        error?.response?.data?.error ||
-          "No fue posible enviar el diagnóstico a aprobación.",
+        error?.response?.data?.error ?? "No fue posible enviar el diagnóstico.",
       );
     } finally {
       setEnviando(false);
@@ -142,7 +169,8 @@ export default function DiagnosticoPanel({ orden, onOrdenActualizada }) {
       <section className="detailSection">
         <h3>Diagnóstico</h3>
         <p className="observaciones">
-          Esta orden todavía no tiene un diagnóstico registrado.
+          Esta orden aún no tiene diagnóstico. Cuando el vehículo esté en estado
+          "En diagnóstico" podrás registrarlo aquí.
         </p>
       </section>
     );
@@ -151,39 +179,61 @@ export default function DiagnosticoPanel({ orden, onOrdenActualizada }) {
   return (
     <section className="detailSection">
       <h3>Diagnóstico</h3>
-
+      <p className="diagnosticoFolio">
+        <strong>Orden:</strong> {orden.folio}
+      </p>
+      {orden.motivoIngreso && (
+        <p className="diagnosticoFolio">
+          <strong>Motivo de ingreso:</strong> {orden.motivoIngreso}
+        </p>
+      )}
       {diagnostico?.bloqueado && (
         <p className="diagnosticoBloqueado">
           Diagnóstico enviado a aprobación el{" "}
           {diagnostico.fechaEnvio
             ? new Date(diagnostico.fechaEnvio).toLocaleString()
             : "-"}
-          . Ya no se puede editar.
+          .
         </p>
       )}
 
       <div className="detailGrid">
         <div className="inputGroup">
           <label>Tipo de diagnóstico</label>
+
           <select
             value={tipoDiagnostico}
             onChange={(e) => setTipoDiagnostico(e.target.value)}
             disabled={!puedeEditarAhora}
           >
             <option value="superficial">Superficial (gratis)</option>
+
             <option value="profundo">Profundo (con costo)</option>
           </select>
         </div>
 
+        <div className="inputGroup">
+          <label>Nivel de batería (%)</label>
+
+          <input
+            type="number"
+            min="0"
+            max="100"
+            value={nivelBateria}
+            onChange={(e) => setNivelBateria(e.target.value)}
+            disabled={!puedeEditarAhora}
+          />
+        </div>
+
         {tipoDiagnostico === "profundo" && (
           <div className="inputGroup">
-            <label>Costo del diagnóstico</label>
+            <label>Costo</label>
+
             <input
               type="number"
               value={costoDiagnostico}
               onChange={(e) => setCostoDiagnostico(e.target.value)}
               disabled={!puedeEditarAhora}
-              placeholder="0"
             />
           </div>
         )}
@@ -195,21 +245,21 @@ export default function DiagnosticoPanel({ orden, onOrdenActualizada }) {
         {filas.map((fila, index) => (
           <div className="checklistFila" key={index}>
             <input
-              type="text"
-              placeholder="Ítem (ej: frenos)"
               value={fila.item}
-              onChange={(e) => actualizarFila(index, "item", e.target.value)}
+              placeholder="Ítem"
               disabled={!puedeEditarAhora}
+              onChange={(e) => actualizarFila(index, "item", e.target.value)}
             />
+
             <input
-              type="text"
-              placeholder="Observación"
               value={fila.observacion}
+              placeholder="Observación"
+              disabled={!puedeEditarAhora}
               onChange={(e) =>
                 actualizarFila(index, "observacion", e.target.value)
               }
-              disabled={!puedeEditarAhora}
             />
+
             {puedeEditarAhora && filas.length > 1 && (
               <button
                 type="button"
@@ -238,6 +288,7 @@ export default function DiagnosticoPanel({ orden, onOrdenActualizada }) {
           <Button variant="secondary" onClick={guardar} disabled={guardando}>
             {guardando ? "Guardando..." : "Guardar diagnóstico"}
           </Button>
+
           <Button
             variant="primary"
             onClick={enviarAAprobacion}

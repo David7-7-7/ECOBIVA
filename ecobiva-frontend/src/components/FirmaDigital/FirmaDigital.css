@@ -1,0 +1,170 @@
+.firmaDigitalModal {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.firmaDigitalContainer {
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  max-width: 600px;
+  width: 90%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.firmaDigitalContainer h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  color: #333;
+  text-align: center;
+}
+
+.instrucciones {
+  text-align: center;
+  color: #666;
+  margin: 0 0 1.5rem 0;
+  font-size: 0.95rem;
+}
+
+.firmaCanvas {
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  cursor: crosshair;
+  display: block;
+  margin: 0 auto 1rem;
+  background: white;
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
+
+.botonesLimpiar {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.btnLimpiar {
+  padding: 0.5rem 1rem;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.btnLimpiar:hover:not(:disabled) {
+  background-color: #e0e0e0;
+}
+
+.btnLimpiar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.terminosGarantia {
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.contenidoTerminos {
+  margin-bottom: 1rem;
+}
+
+.textoLegal {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #555;
+  text-align: justify;
+  padding: 0.5rem 0;
+}
+
+.checkboxTerminos {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.checkboxTerminos input[type="checkbox"] {
+  margin-top: 0.25rem;
+  cursor: pointer;
+}
+
+.checkboxTerminos label {
+  font-size: 0.9rem;
+  color: #333;
+  cursor: pointer;
+}
+
+.botonesAccion {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.btnCancelar,
+.btnEnviar {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btnCancelar {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.btnCancelar:hover {
+  background-color: #d0d0d0;
+}
+
+.btnEnviar {
+  background-color: #4caf50;
+  color: white;
+}
+
+.btnEnviar:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.btnEnviar:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (max-width: 600px) {
+  .firmaDigitalContainer {
+    padding: 1.5rem;
+  }
+
+  .firmaCanvas {
+    max-width: 100%;
+  }
+
+  .botonesAccion {
+    flex-direction: column;
+  }
+
+  .btnCancelar,
+  .btnEnviar {
+    width: 100%;
+  }
+}

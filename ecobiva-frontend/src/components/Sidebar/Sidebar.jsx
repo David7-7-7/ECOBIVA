@@ -17,6 +17,9 @@ import {
   FaUserTie,
   FaExchangeAlt,
   FaMoneyCheckAlt,
+  FaSearch,
+  FaExclamationTriangle,
+  FaFileContract,
 } from "react-icons/fa";
 
 import { Link, useLocation } from "react-router-dom";
@@ -50,6 +53,12 @@ const MENU = [
     roles: ["Admin", "Asesor", "Tecnico"],
   },
   {
+    nombre: "Diagnósticos",
+    ruta: "/diagnosticos",
+    icono: <FaSearch />,
+    roles: ["Admin", "Asesor", "Tecnico"],
+  },
+  {
     nombre: "Inventario",
     ruta: "/inventario",
     icono: <FaWarehouse />,
@@ -72,6 +81,18 @@ const MENU = [
     ruta: "/configuracion",
     icono: <FaCog />,
     roles: ["Admin", "Asesor", "Tecnico"],
+  },
+  {
+    nombre: "Alertas de stock",
+    ruta: "/alertas-stock",
+    icono: <FaExclamationTriangle />,
+    roles: ["Admin", "Asesor"],
+  },
+  {
+    nombre: "Términos de garantía",
+    ruta: "/terminos-garantia",
+    icono: <FaFileContract />,
+    roles: ["Admin"],
   },
 
   // Seguridad
@@ -151,11 +172,12 @@ export default function Sidebar() {
           {menuVisible.map((item) => (
             <li
               key={item.ruta}
-              className={location.pathname === item.ruta ? "active" : ""}
+              className={
+                location.pathname.startsWith(item.ruta) ? "active" : ""
+              }
             >
               <Link to={item.ruta}>
                 {item.icono}
-
                 {sidebarOpen && <span>{item.nombre}</span>}
               </Link>
             </li>
@@ -165,7 +187,6 @@ export default function Sidebar() {
 
       <button className="logoutButton" onClick={logout}>
         <FaSignOutAlt />
-
         {sidebarOpen && <span>Cerrar sesión</span>}
       </button>
     </aside>

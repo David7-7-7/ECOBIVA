@@ -31,16 +31,21 @@ CREATE TABLE `Bateria` (
 
 CREATE TABLE `Cliente` (
   `idCliente` int NOT NULL AUTO_INCREMENT,
+  `tipoDocumento` varchar(30) NOT NULL DEFAULT 'CC',
   `nombre` varchar(100) NOT NULL,
   `telefono` varchar(50) DEFAULT NULL,
   `correo` varchar(100) DEFAULT NULL,
+  `ciudad` varchar(100) DEFAULT NULL,
+  `direccion` varchar(200) DEFAULT NULL,
+  `tipoComunicacion` varchar(30) DEFAULT NULL,
+  `fechaRegistro` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `documento` varchar(50) NOT NULL,
   `preferenciaNotificacion` varchar(50) DEFAULT NULL,
   `estado` tinyint(1) NOT NULL DEFAULT '1',
   `puntosAcumulados` int NOT NULL DEFAULT '0',
   PRIMARY KEY (`idCliente`),
   UNIQUE KEY `documento` (`documento`)
-) ENGINE = InnoDB AUTO_INCREMENT = 4 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
 
 CREATE TABLE `Diagnostico` (
   `idDiagnostico` int NOT NULL AUTO_INCREMENT,
@@ -429,12 +434,14 @@ CREATE TABLE `Vehiculo` (
   `marca` varchar(50) DEFAULT NULL,
   `modelo` varchar(50) DEFAULT NULL,
   `anio` int DEFAULT NULL,
-  `serialMotor` varchar(100) DEFAULT NULL,
   `tipoVehiculo` varchar(50) DEFAULT NULL,
-  `especificacionesBateria` varchar(255) DEFAULT NULL,
   `idCliente` int NOT NULL,
+  `estado` tinyint(1) NOT NULL DEFAULT '1',
+  `color` varchar(30) DEFAULT NULL,
+  `kilometraje` int DEFAULT NULL,
+  `fechaIngreso` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`idVehiculo`),
   UNIQUE KEY `placa` (`placa`),
   KEY `idCliente` (`idCliente`),
   CONSTRAINT `Vehiculo_ibfk_1` FOREIGN KEY (`idCliente`) REFERENCES `Cliente` (`idCliente`)
-) ENGINE = InnoDB AUTO_INCREMENT = 5 DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;

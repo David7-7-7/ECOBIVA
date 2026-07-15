@@ -8,8 +8,60 @@ const pool = require("../config/db");
 // "pendiente_aprobacion" — ver enviarAAprobacion().
 // -----------------------------------------------------------------------------
 
+async function listar(idUsuario = null, esTecnico = false) {
+  let sql = `
+    SELECT
+      o.idOrden,
+      o.folio,
+      o.estado,
+      o.fechaCreacion,
+
+      c.nombre AS cliente,
+      c.telefono,
+
+      v.placa,
+      v.marca,
+      v.modelo,
+
+      d.idDiagnostico,
+      d.tipoDiagnostico,
+      d.bloqueado,
+      d.fechaEnvio
+
+    FROM OrdenServicio o
+
+    INNER JOIN Cliente c
+      ON c.idCliente = o.idCliente
+
+    INNER JOIN Vehiculo v
+      ON v.idVehiculo = o.idVehiculo
+
+    LEFT JOIN Diagnostico d
+      ON d.idOrdenServicio = o.idOrden
+
+    WHERE o.estado IN ('en_diagnostico','pendiente_aprobacion')
+  `;
+
+  const params = [];
+
+  if (esTecnico) {
+    sql += " AND o.idTecnico = ?";
+    params.push(idUsuario);
+  }
+
+  sql += " ORDER BY o.fechaCreacion DESC";
+
+  const [rows] = await pool.query(sql, params);
+
+  return rows;
+}
+
 function parseChecklist(diagnostico) {
-  if (diagnostico && diagnostico.checklist && typeof diagnostico.checklist === "string") {
+  if (
+    diagnostico &&
+    diagnostico.checklist &&
+    typeof diagnostico.checklist === "string"
+  ) {
     try {
       diagnostico.checklist = JSON.parse(diagnostico.checklist);
     } catch (error) {
@@ -60,14 +112,17 @@ async function guardar(idOrdenServicio, datos) {
       );
     }
 
-    const tipoDiagnostico = datos.tipoDiagnostico || existente?.tipoDiagnostico || "superficial";
+    const tipoDiagnostico =
+      datos.tipoDiagnostico || existente?.tipoDiagnostico || "superficial";
     if (!["superficial", "profundo"].includes(tipoDiagnostico)) {
       throw new Error("tipoDiagnostico debe ser 'superficial' o 'profundo'.");
     }
 
     // El diagnóstico superficial siempre es gratis, aunque manden un costo.
     const costoDiagnostico =
-      tipoDiagnostico === "profundo" ? Number(datos.costoDiagnostico ?? existente?.costoDiagnostico ?? 0) : 0;
+      tipoDiagnostico === "profundo"
+        ? Number(datos.costoDiagnostico ?? existente?.costoDiagnostico ?? 0)
+        : 0;
 
     const checklist =
       datos.checklist !== undefined
@@ -76,22 +131,45 @@ async function guardar(idOrdenServicio, datos) {
           ? JSON.stringify(existente.checklist)
           : null;
 
-    const subtotalManoObra = Number(datos.subtotalManoObra ?? existente?.subtotalManoObra ?? 0);
-    const subtotalRepuestos = Number(datos.subtotalRepuestos ?? existente?.subtotalRepuestos ?? 0);
+    const subtotalManoObra = Number(
+      datos.subtotalManoObra ?? existente?.subtotalManoObra ?? 0,
+    );
+    const subtotalRepuestos = Number(
+      datos.subtotalRepuestos ?? existente?.subtotalRepuestos ?? 0,
+    );
+
+    // Nivel de batería: ya no se pide al cliente al crear la orden (decisión
+    // 3.2 de la bitácora), lo mide el técnico acá, durante el diagnóstico.
+    let nivelBateria = datos.nivelBateria ?? existente?.nivelBateria ?? null;
+    if (nivelBateria !== null && nivelBateria !== undefined) {
+      nivelBateria = Number(nivelBateria);
+      if (Number.isNaN(nivelBateria) || nivelBateria < 0 || nivelBateria > 100) {
+        throw new Error("nivelBateria debe ser un número entre 0 y 100.");
+      }
+    }
 
     await connection.query(
       `
             INSERT INTO Diagnostico
-            (checklist, tipoDiagnostico, costoDiagnostico, subtotalManoObra, subtotalRepuestos, idOrdenServicio)
-            VALUES (?, ?, ?, ?, ?, ?)
+            (checklist, tipoDiagnostico, nivelBateria, costoDiagnostico, subtotalManoObra, subtotalRepuestos, idOrdenServicio)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 checklist = VALUES(checklist),
                 tipoDiagnostico = VALUES(tipoDiagnostico),
+                nivelBateria = VALUES(nivelBateria),
                 costoDiagnostico = VALUES(costoDiagnostico),
                 subtotalManoObra = VALUES(subtotalManoObra),
                 subtotalRepuestos = VALUES(subtotalRepuestos)
         `,
-      [checklist, tipoDiagnostico, costoDiagnostico, subtotalManoObra, subtotalRepuestos, idOrdenServicio],
+      [
+        checklist,
+        tipoDiagnostico,
+        nivelBateria,
+        costoDiagnostico,
+        subtotalManoObra,
+        subtotalRepuestos,
+        idOrdenServicio,
+      ],
     );
 
     const actualizado = await obtenerPorOrden(idOrdenServicio, connection);
@@ -174,6 +252,7 @@ async function enviarAAprobacion(idOrdenServicio, idUsuario) {
 }
 
 module.exports = {
+  listar,
   obtenerPorOrden,
   guardar,
   enviarAAprobacion,

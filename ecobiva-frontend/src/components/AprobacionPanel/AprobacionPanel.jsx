@@ -4,6 +4,7 @@ import "./AprobacionPanel.css";
 import Button from "../Button/Button";
 import { useAuth } from "../../context/AuthContext";
 import { registrarAprobacionOrden } from "../../services/ordenService";
+import FirmaDigital from "../FirmaDigital/FirmaDigital";
 
 // La aprobación del cliente hoy es remota: el asesor habla con el cliente
 // por fuera del sistema (llamada/WhatsApp) y registra acá la respuesta.
@@ -12,6 +13,7 @@ export default function AprobacionPanel({ orden, onOrdenActualizada }) {
   const puedeRegistrar = tieneAlgunRol(["Admin", "Asesor"]);
   const [notas, setNotas] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [capturandoFirma, setCapturandoFirma] = useState(false);
 
   const mostrarPanel =
     puedeRegistrar &&
@@ -19,11 +21,12 @@ export default function AprobacionPanel({ orden, onOrdenActualizada }) {
 
   if (!mostrarPanel) return null;
 
-  const registrar = async (aprobado) => {
+  const registrar = async (datos) => {
     setEnviando(true);
     try {
-      await registrarAprobacionOrden(orden.idOrden, aprobado, notas || null);
+      await registrarAprobacionOrden(orden.idOrden, { notas: notas || null, ...datos });
       setNotas("");
+      setCapturandoFirma(false);
       if (onOrdenActualizada) await onOrdenActualizada();
     } catch (error) {
       console.error(error);
@@ -58,19 +61,28 @@ export default function AprobacionPanel({ orden, onOrdenActualizada }) {
       <div className="aprobacionAcciones">
         <button
           className="btnRechazar"
-          onClick={() => registrar(false)}
+          onClick={() => registrar({ aprobado: false, metodoCaptura: "remoto_asesor", terminosAceptados: false })}
           disabled={enviando || orden.estado === "rechazada"}
         >
           Cliente rechaza
         </button>
         <Button
           variant="primary"
-          onClick={() => registrar(true)}
+          onClick={() => setCapturandoFirma(true)}
           disabled={enviando}
         >
           Cliente aprueba
         </Button>
       </div>
+
+      {capturandoFirma && (
+        <FirmaDigital
+          mostrarTerminos
+          textoTerminos="Declaro que conozco y acepto el diagnóstico, los valores presentados y los términos del servicio."
+          onCancel={() => setCapturandoFirma(false)}
+          onFirmaCapturada={(firma) => registrar({ aprobado: true, ...firma })}
+        />
+      )}
     </section>
   );
 }

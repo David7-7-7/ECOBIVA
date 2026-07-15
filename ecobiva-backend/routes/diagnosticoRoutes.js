@@ -8,6 +8,12 @@ const verificarRol = require("../middlewares/verificarRol");
 
 router.use(verificarToken);
 
+router.get(
+  "/",
+  verificarRol(["Admin", "Asesor", "Tecnico"]),
+  diagnosticoController.listar,
+);
+
 // Consultar el diagnóstico de una orden (idOrden = idOrdenServicio).
 router.get(
   "/:idOrden",

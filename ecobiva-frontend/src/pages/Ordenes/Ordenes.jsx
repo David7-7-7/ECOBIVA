@@ -8,8 +8,12 @@ import StatusBadge from "../../components/StatusBadge/StatusBadge";
 import SearchBar from "../../components/SearchBar/SearchBar";
 import DetailModal from "../../components/DetailModal/DetailModal";
 import ConfirmModal from "../../components/ConfirmModal/ConfirmModal";
-import OrdenDetail, { ESTADO_LABELS, ESTADO_VARIANT } from "../../components/OrdenDetail/OrdenDetail";
+import OrdenDetail, {
+  ESTADO_LABELS,
+  ESTADO_VARIANT,
+} from "../../components/OrdenDetail/OrdenDetail";
 import OrdenModal from "../../components/OrdenModal/OrdenModal";
+import { useNavigate } from "react-router-dom";
 import {
   obtenerOrdenes,
   obtenerOrden,
@@ -18,6 +22,7 @@ import {
   cambiarEstadoOrden,
   eliminarOrden,
 } from "../../services/ordenService";
+import { crearEvidencia, subirFoto } from "../../services/evidenciaService";
 
 export default function Ordenes() {
   const [ordenes, setOrdenes] = useState([]);
@@ -28,6 +33,7 @@ export default function Ordenes() {
   const [detalleOpen, setDetalleOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     cargarOrdenes();
@@ -43,12 +49,23 @@ export default function Ordenes() {
     }
   };
 
-  const guardarOrden = async (orden) => {
+  const guardarOrden = async ({ orden, evidencia }) => {
     try {
       if (ordenEditar?.idOrden) {
         await actualizarOrden(ordenEditar.idOrden, orden);
       } else {
-        await crearOrden(orden);
+        const nuevaOrden = await crearOrden(orden);
+
+        const nuevaEvidencia = await crearEvidencia({
+          idOrden: nuevaOrden.idOrden,
+          observaciones: evidencia.observaciones,
+        });
+
+        if (evidencia.fotos.length > 0) {
+          for (const foto of evidencia.fotos) {
+            await subirFoto(nuevaEvidencia.idEvidencia, foto.archivo);
+          }
+        }
       }
       cerrarModal();
       await cargarOrdenes();
@@ -241,6 +258,18 @@ export default function Ordenes() {
         message="¿Está seguro de eliminar esta orden? Si ya tiene registros asociados (diagnóstico, evidencias, etc.) se cancelará en su lugar."
         onClose={() => setConfirmDelete(false)}
         onConfirm={confirmarEliminarOrden}
+      />
+      <ActionButtons
+        onView={() => verDetalle(orden)}
+        onEdit={() => {
+          setOrdenEditar(orden);
+          setModalOpen(true);
+        }}
+        onDelete={() => {
+          setOrdenEliminar(orden);
+          setConfirmDelete(true);
+        }}
+        onDiagnosticar={() => navigate(`/diagnostico/${orden.idOrden}`)}
       />
     </>
   );

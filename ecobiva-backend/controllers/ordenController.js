@@ -46,12 +46,19 @@ async function obtenerHistorial(req, res) {
 }
 
 async function crear(req, res) {
-  const { idCliente, idVehiculo } = req.body;
+  const { idCliente, idVehiculo, motivoIngreso } = req.body;
 
   if (!idCliente || !idVehiculo) {
     return res
       .status(400)
       .json({ error: "Cliente y vehículo son obligatorios" });
+  }
+
+  if (!motivoIngreso || !motivoIngreso.trim()) {
+    return res.status(400).json({
+      error:
+        "El motivo de ingreso es obligatorio (con qué se guía el técnico para revisar el vehículo).",
+    });
   }
 
   try {
@@ -142,7 +149,7 @@ async function actualizarEstado(req, res) {
 }
 
 async function registrarAprobacion(req, res) {
-  const { aprobado, notas } = req.body;
+  const { aprobado, notas, imagenFirma, metodoCaptura, terminosAceptados } = req.body;
 
   if (typeof aprobado !== "boolean") {
     return res.status(400).json({
@@ -158,7 +165,7 @@ async function registrarAprobacion(req, res) {
 
     const { orden, facturaDiagnostico } = await ordenDao.registrarAprobacion(
       req.params.id,
-      { aprobado, notas },
+      { aprobado, notas, imagenFirma, metodoCaptura, terminosAceptados },
       req.usuario.idUsuario,
     );
 
@@ -167,7 +174,7 @@ async function registrarAprobacion(req, res) {
       modulo: "ORDENES",
       detalle: `Orden ${orden.folio}: cliente ${aprobado ? "aprobó" : "rechazó"} el diagnóstico${
         notas ? ` (Notas: ${notas})` : ""
-      }${facturaDiagnostico ? ` — se generó factura ${facturaDiagnostico.numeroFactura} por diagnóstico profundo` : ""}`,
+      }${facturaDiagnostico ? ` — se generó factura ${facturaDiagnostico.numeroFactura} por diagnóstico profundo` : ""} (Método de captura: ${metodoCaptura || "remoto_asesor"})`,
     });
 
     return res.json({ orden, facturaDiagnostico });

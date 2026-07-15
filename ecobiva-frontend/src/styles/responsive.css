@@ -1,0 +1,51 @@
+/* Reglas comunes para móvil y tablet. Se cargan después de los estilos base. */
+html, body, #root { min-width: 0; overflow-x: hidden; }
+#root { width: 100%; max-width: none; margin: 0; border: 0; text-align: initial; }
+img { max-width: 100%; height: auto; }
+main { min-width: 0; }
+.tableWrapper, .table-responsive, .tableContainer, .inventarioCard, .alertasStockCard { overflow-x: auto; }
+.tableWrapper table, .table-responsive table, .tableContainer table, .inventarioCard table, .alertasStockCard table { min-width: 620px; }
+
+@media (max-width: 900px) {
+  .layout { display: block; }
+  .layoutBody, .layoutBody.expand { margin-left: 0; width: 100%; }
+  .sidebar, .sidebar.collapsed { position: relative; width: 100%; height: auto; min-height: 0; padding: 12px; overflow: visible; }
+  .sidebar > div:first-child { width: 100%; }
+  .sidebar ul { display: flex; flex-wrap: wrap; gap: 6px; max-height: 176px; overflow-y: auto; }
+  .sidebar li { width: calc(50% - 4px); margin: 0; }
+  .sidebar a { justify-content: flex-start; padding: 10px; font-size: 13px; }
+  .sidebar.collapsed span, .sidebar.collapsed h2, .sidebar.collapsed p { display: initial; }
+  .sidebar.collapsed .logoutButton { font-size: 14px; }
+  .brand { flex-direction: row; justify-content: flex-start; gap: 12px; margin-bottom: 10px; }
+  .brand-logo { width: 42px; height: 42px; margin: 0; font-size: 19px; }
+  .brand h2 { font-size: 17px; }
+  .brand p { display: none; }
+  .collapseButton { width: auto; position: absolute; right: 12px; top: 14px; margin: 0; }
+  .logoutButton { margin-top: 12px; }
+  .navbar { height: auto; min-height: 64px; padding: 12px 18px; }
+  main { padding: 20px 16px; }
+  .detailModal { width: calc(100% - 24px); max-width: none; max-height: calc(100dvh - 24px); }
+  .detailBody, .modalBody { padding: 18px; }
+  .detailGrid, .ordenModalGrid { grid-template-columns: 1fr; }
+  .detailGrid { gap: 14px; }
+  .pageHeader h1, .ordenHeader h1 { font-size: 25px; }
+}
+
+@media (max-width: 600px) {
+  main { padding: 16px 12px; }
+  .sidebar li { width: 100%; }
+  .sidebar ul { max-height: 210px; }
+  .navbar-right { flex-wrap: wrap; }
+  .profile p { display: none; }
+  .pageHeader, .ordenHeader, .inventarioHeader { align-items: flex-start; gap: 12px; }
+  .pageHeaderActions, .actions, .ordenModalFooter, .inventarioActions { width: 100%; flex-direction: column; align-items: stretch; }
+  .pageHeaderActions > *, .actions > *, .ordenModalFooter > *, .inventarioActions > * { width: 100%; justify-content: center; }
+  .ordenCard, .inventarioCard, .alertasStockCard, .card { padding: 16px; border-radius: 12px; }
+  .modalContainer { width: calc(100% - 20px) !important; max-height: calc(100dvh - 20px); }
+  .modalHeader { padding: 16px; }
+  .modalHeader h2 { font-size: 18px; }
+  .evidenciaIngreso { padding: 14px; }
+  .fotoPreview { width: 110px; height: 110px; }
+  .actionButtons { gap: 6px; }
+  .accion { width: 40px; height: 40px; }
+}

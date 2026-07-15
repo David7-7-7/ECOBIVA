@@ -41,11 +41,8 @@ export const autoasignarOrden = async (id) => {
 // Registra la respuesta del cliente (aprobado/rechazado) frente al
 // diagnóstico de la orden. La captura hoy es remota: el asesor la marca
 // en el sistema después de hablar con el cliente por fuera (WhatsApp/llamada).
-export const registrarAprobacionOrden = async (id, aprobado, notas) => {
-  const { data } = await api.patch(`/ordenes/${id}/aprobacion`, {
-    aprobado,
-    notas,
-  });
+export const registrarAprobacionOrden = async (id, datos) => {
+  const { data } = await api.patch(`/ordenes/${id}/aprobacion`, datos);
   return data;
 };
 

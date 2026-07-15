@@ -3,10 +3,11 @@ import "./OrdenDetail.css";
 
 import DataField from "../DataField/DataField";
 import StatusBadge from "../StatusBadge/StatusBadge";
-import DiagnosticoPanel from "../DiagnosticoPanel/DiagnosticoPanel";
 import AprobacionPanel from "../AprobacionPanel/AprobacionPanel";
 import FacturaPanel from "../FacturaPanel/FacturaPanel";
 import AutoasignacionPanel from "../AutoasignacionPanel/AutoasignacionPanel";
+import EvidenciasOrden from "../EvidenciaIngreso/EvidenciasOrden";
+import GarantiaPanel from "../GarantiaPanel/GarantiaPanel";
 import { useAuth } from "../../context/AuthContext";
 
 export const ESTADO_LABELS = {
@@ -58,7 +59,11 @@ const TRANSICIONES_MANUALES = {
   cancelada: [],
 };
 
-export default function OrdenDetail({ orden, onCambiarEstado, onOrdenActualizada }) {
+export default function OrdenDetail({
+  orden,
+  onCambiarEstado,
+  onOrdenActualizada,
+}) {
   const { tieneAlgunRol } = useAuth();
   const [estadoDestino, setEstadoDestino] = useState("");
   const [motivo, setMotivo] = useState("");
@@ -93,11 +98,17 @@ export default function OrdenDetail({ orden, onCambiarEstado, onOrdenActualizada
             value={orden.tecnicoNombre || "Sin asignar"}
           />
         </div>
+        <div className="detailGrid">
+          <DataField
+            label="Motivo de ingreso"
+            value={orden.motivoIngreso || "-"}
+          />
+        </div>
         {orden.estado === "pendiente_asignacion" && (
           <p className="observaciones">
             Esta orden está en cola de espera: aún no hay técnicos con cupo
-            disponible. Se asignará automáticamente en cuanto uno quede
-            libre, o puede asignarse manualmente editando la orden.
+            disponible. Se asignará automáticamente en cuanto uno quede libre, o
+            puede asignarse manualmente editando la orden.
           </p>
         )}
       </section>
@@ -117,14 +128,6 @@ export default function OrdenDetail({ orden, onCambiarEstado, onOrdenActualizada
             label="Kilometraje ingreso"
             value={orden.kilometrajeIngreso ?? "-"}
           />
-          <DataField
-            label="Nivel batería ingreso"
-            value={
-              orden.nivelBateriaIngreso != null
-                ? `${orden.nivelBateriaIngreso}%`
-                : "-"
-            }
-          />
 
           <div>
             <span className="fieldTitle">Estado</span>
@@ -136,45 +139,45 @@ export default function OrdenDetail({ orden, onCambiarEstado, onOrdenActualizada
         </div>
       </section>
 
-      {puedeCambiarEstado && onCambiarEstado && transicionesDisponibles.length > 0 && (
-        <section className="detailSection">
-          <h3>Cambiar estado</h3>
-          <div className="detailGrid">
-            <div className="inputGroup">
-              <label>Nuevo estado</label>
-              <select
-                value={estadoDestino}
-                onChange={(e) => setEstadoDestino(e.target.value)}
-              >
-                <option value="">Seleccione...</option>
-                {transicionesDisponibles.map((estado) => (
-                  <option key={estado} value={estado}>
-                    {ESTADO_LABELS[estado]}
-                  </option>
-                ))}
-              </select>
+      {puedeCambiarEstado &&
+        onCambiarEstado &&
+        transicionesDisponibles.length > 0 && (
+          <section className="detailSection">
+            <h3>Cambiar estado</h3>
+            <div className="detailGrid">
+              <div className="inputGroup">
+                <label>Nuevo estado</label>
+                <select
+                  value={estadoDestino}
+                  onChange={(e) => setEstadoDestino(e.target.value)}
+                >
+                  <option value="">Seleccione...</option>
+                  {transicionesDisponibles.map((estado) => (
+                    <option key={estado} value={estado}>
+                      {ESTADO_LABELS[estado]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="inputGroup">
+                <label>Motivo (opcional)</label>
+                <input
+                  type="text"
+                  value={motivo}
+                  onChange={(e) => setMotivo(e.target.value)}
+                  placeholder="Motivo del cambio..."
+                />
+              </div>
             </div>
-            <div className="inputGroup">
-              <label>Motivo (opcional)</label>
-              <input
-                type="text"
-                value={motivo}
-                onChange={(e) => setMotivo(e.target.value)}
-                placeholder="Motivo del cambio..."
-              />
-            </div>
-          </div>
-          <button
-            className="btnCambiarEstado"
-            onClick={aplicarCambio}
-            disabled={!estadoDestino}
-          >
-            Aplicar cambio de estado
-          </button>
-        </section>
-      )}
-
-      <DiagnosticoPanel orden={orden} onOrdenActualizada={onOrdenActualizada} />
+            <button
+              className="btnCambiarEstado"
+              onClick={aplicarCambio}
+              disabled={!estadoDestino}
+            >
+              Aplicar cambio de estado
+            </button>
+          </section>
+        )}
 
       <AutoasignacionPanel
         orden={orden}
@@ -182,6 +185,9 @@ export default function OrdenDetail({ orden, onCambiarEstado, onOrdenActualizada
       />
 
       <AprobacionPanel orden={orden} onOrdenActualizada={onOrdenActualizada} />
+
+      <EvidenciasOrden idOrden={orden.idOrden} />
+      <GarantiaPanel orden={orden} />
 
       <FacturaPanel orden={orden} onOrdenActualizada={onOrdenActualizada} />
 

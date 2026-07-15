@@ -513,18 +513,9 @@ async function sembrarClientesYVehiculos(conn) {
       if (existeVehiculo.length > 0) continue;
 
       await conn.execute(
-        `INSERT INTO Vehiculo (placa, marca, modelo, anio, serialMotor, tipoVehiculo, especificacionesBateria, idCliente)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          v.placa,
-          v.marca,
-          v.modelo,
-          v.anio,
-          v.serialMotor,
-          v.tipoVehiculo,
-          v.especificacionesBateria,
-          idCliente,
-        ],
+        `INSERT INTO Vehiculo (placa, marca, modelo, anio, tipoVehiculo, idCliente)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [v.placa, v.marca, v.modelo, v.anio, v.tipoVehiculo, idCliente],
       );
     }
   }

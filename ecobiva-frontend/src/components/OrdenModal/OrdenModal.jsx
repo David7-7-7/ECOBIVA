@@ -5,6 +5,7 @@ import Button from "../Button/Button";
 import { obtenerClientes, obtenerCliente } from "../../services/clienteService";
 import { listarUsuarios } from "../../services/usuarioService";
 import { listarTecnicos } from "../../services/tecnicoService";
+import EvidenciaIngreso from "../EvidenciaIngreso/EvidenciaIngreso";
 import "./OrdenModal.css";
 
 const inicializarOrden = () => ({
@@ -13,7 +14,7 @@ const inicializarOrden = () => ({
   idTecnico: "",
   idAsesor: "",
   kilometrajeIngreso: "",
-  nivelBateriaIngreso: "",
+  motivoIngreso: "",
 });
 
 export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
@@ -23,6 +24,8 @@ export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
   const [vehiculos, setVehiculos] = useState([]);
   const [tecnicos, setTecnicos] = useState([]);
   const [asesores, setAsesores] = useState([]);
+  const [observacionesIngreso, setObservacionesIngreso] = useState("");
+  const [fotosIngreso, setFotosIngreso] = useState([]);
 
   const clienteSeleccionado = clientes.find(
     (cliente) => String(cliente.idCliente) === String(orden.idCliente),
@@ -45,19 +48,23 @@ export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
         idTecnico: ordenEditar.idTecnico || "",
         idAsesor: ordenEditar.idAsesor || "",
         kilometrajeIngreso: ordenEditar.kilometrajeIngreso ?? "",
-        nivelBateriaIngreso: ordenEditar.nivelBateriaIngreso ?? "",
+        motivoIngreso: ordenEditar.motivoIngreso ?? "",
       });
 
       if (ordenEditar.idCliente) {
         cargarVehiculosDeCliente(ordenEditar.idCliente);
       }
       setErrores({});
+      setObservacionesIngreso("");
+      setFotosIngreso([]);
       return;
     }
 
     setOrden(inicializarOrden());
     setVehiculos([]);
     setErrores({});
+    setObservacionesIngreso("");
+    setFotosIngreso([]);
   }, [open, ordenEditar]);
 
   const cargarClientes = async () => {
@@ -128,6 +135,8 @@ export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
     if (!orden.idCliente) nuevo.idCliente = "Seleccione el cliente.";
     if (!orden.idVehiculo) nuevo.idVehiculo = "Seleccione el vehículo.";
     if (!orden.idAsesor) nuevo.idAsesor = "Seleccione el asesor responsable.";
+    if (!orden.motivoIngreso.trim())
+      nuevo.motivoIngreso = "Indique el motivo de ingreso.";
 
     setErrores(nuevo);
 
@@ -142,13 +151,16 @@ export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
         orden.kilometrajeIngreso === ""
           ? null
           : Number(orden.kilometrajeIngreso),
-      nivelBateriaIngreso:
-        orden.nivelBateriaIngreso === ""
-          ? null
-          : Number(orden.nivelBateriaIngreso),
+      motivoIngreso: orden.motivoIngreso.trim(),
     };
 
-    await onSave(payload);
+    await onSave({
+      orden: payload,
+      evidencia: {
+        observaciones: observacionesIngreso,
+        fotos: fotosIngreso,
+      },
+    });
     onClose();
   };
 
@@ -270,16 +282,30 @@ export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
             }
           />
 
-          <Input
-            label="Nivel de batería de ingreso (%)"
-            type="number"
-            value={orden.nivelBateriaIngreso}
-            onChange={(e) =>
-              setOrden({ ...orden, nivelBateriaIngreso: e.target.value })
-            }
-          />
-
+          <div className="inputGroup ordenModalFull">
+            <label>
+              Motivo de ingreso <span>*</span>
+            </label>
+            <textarea
+              rows={3}
+              placeholder='Ej: "La moto no enciende."'
+              value={orden.motivoIngreso}
+              onChange={(e) =>
+                setOrden({ ...orden, motivoIngreso: e.target.value })
+              }
+            />
+            {errores.motivoIngreso && (
+              <p className="inputError">{errores.motivoIngreso}</p>
+            )}
+          </div>
         </div>
+
+        <EvidenciaIngreso
+          observaciones={observacionesIngreso}
+          setObservaciones={setObservacionesIngreso}
+          fotos={fotosIngreso}
+          setFotos={setFotosIngreso}
+        />
 
         <div className="ordenModalFooter">
           <Button variant="secondary" onClick={onClose}>

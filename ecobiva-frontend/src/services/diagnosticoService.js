@@ -1,22 +1,39 @@
 import api from "../api/api";
 
-// Obtener el diagnóstico de una orden (1:1 con idOrdenServicio).
+// ===============================
+// LISTADO
+// ===============================
+
+export const listarDiagnosticos = async () => {
+  const { data } = await api.get("/diagnosticos");
+  return data;
+};
+
+// ===============================
+// OBTENER
+// ===============================
+
 export const obtenerDiagnostico = async (idOrden) => {
   const { data } = await api.get(`/diagnosticos/${idOrden}`);
   return data;
 };
 
-// Crear o actualizar (upsert) el diagnóstico de una orden. Solo permitido
-// mientras la orden está "en_diagnostico" y el diagnóstico no está bloqueado.
+// ===============================
+// GUARDAR (UPSERT)
+// ===============================
+
 export const guardarDiagnostico = async (idOrden, diagnostico) => {
   const { data } = await api.put(`/diagnosticos/${idOrden}`, diagnostico);
+
   return data;
 };
 
-// Bloquea el diagnóstico y pasa la orden a "pendiente_aprobacion".
+// ===============================
+// ENVIAR A APROBACIÓN
+// ===============================
+
 export const enviarDiagnosticoAAprobacion = async (idOrden) => {
-  const { data } = await api.post(
-    `/diagnosticos/${idOrden}/enviar-aprobacion`,
-  );
+  const { data } = await api.post(`/diagnosticos/${idOrden}/enviar-aprobacion`);
+
   return data;
 };

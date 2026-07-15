@@ -47,6 +47,7 @@ const SELECT_BASE = `
         o.estado,
         o.kilometrajeIngreso,
         o.nivelBateriaIngreso,
+        o.motivoIngreso,
         o.idCliente,
         o.idVehiculo,
         o.idTecnico,
@@ -229,18 +230,24 @@ async function crear(datos, idUsuarioCreador) {
                 estado,
                 kilometrajeIngreso,
                 nivelBateriaIngreso,
+                motivoIngreso,
                 idCliente,
                 idVehiculo,
                 idTecnico,
                 idAsesor
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
       [
         folio,
         estadoInicial,
         datos.kilometrajeIngreso,
-        datos.nivelBateriaIngreso,
+        // nivelBateriaIngreso ya no se captura al crear la orden (decisión
+        // 3.2 de la bitácora): el técnico la mide durante el diagnóstico
+        // (ver Diagnostico.nivelBateria). Si algún día vuelve a mandarse
+        // desde el formulario, esto lo sigue soportando; si no, queda NULL.
+        datos.nivelBateriaIngreso ?? null,
+        datos.motivoIngreso,
         datos.idCliente,
         datos.idVehiculo,
         idTecnico,
@@ -363,6 +370,7 @@ async function actualizar(idOrden, datos, idUsuario = null) {
             SET
                 kilometrajeIngreso = ?,
                 nivelBateriaIngreso = ?,
+                motivoIngreso = ?,
                 idTecnico = ?,
                 idAsesor = ?,
                 estado = ?
@@ -371,6 +379,7 @@ async function actualizar(idOrden, datos, idUsuario = null) {
       [
         datos.kilometrajeIngreso ?? ordenActual.kilometrajeIngreso,
         datos.nivelBateriaIngreso ?? ordenActual.nivelBateriaIngreso,
+        datos.motivoIngreso ?? ordenActual.motivoIngreso,
         idTecnicoNuevo,
         datos.idAsesor !== undefined ? datos.idAsesor : ordenActual.idAsesor,
         estadoNuevo,
@@ -567,7 +576,7 @@ async function eliminarOCancelar(idOrden, idUsuario) {
  * genera automáticamente una Factura tipo 'diagnostico' por ese valor
  * (el diagnóstico "superficial" es gratis y no genera factura).
  */
-async function registrarAprobacion(idOrden, { aprobado, notas }, idUsuario) {
+async function registrarAprobacion(idOrden, { aprobado, notas, imagenFirma, metodoCaptura, terminosAceptados }, idUsuario) {
   const connection = await pool.getConnection();
 
   try {
@@ -592,13 +601,23 @@ async function registrarAprobacion(idOrden, { aprobado, notas }, idUsuario) {
       );
     }
 
+    const metodoFinal = metodoCaptura || "remoto_asesor";
+    const firmaFinal = imagenFirma || null;
+    if (metodoFinal === "canvas_cliente" && (!firmaFinal || !firmaFinal.startsWith("data:image/"))) {
+      throw new Error("La firma capturada no es válida.");
+    }
+    if (aprobado && !terminosAceptados) {
+      throw new Error("El cliente debe aceptar los términos antes de aprobar el diagnóstico.");
+    }
+    const terminosFlag = terminosAceptados ? 1 : 0;
+
     await connection.query(
       `
             INSERT INTO FirmaDigital
             (imagenFirma, metodoCaptura, terminosAceptados, idOrden)
-            VALUES (NULL, 'remoto_asesor', ?, ?)
+            VALUES (?, ?, ?, ?)
         `,
-      [aprobado ? 1 : 0, idOrden],
+      [firmaFinal, metodoFinal, terminosFlag, idOrden],
     );
 
     await connection.query(

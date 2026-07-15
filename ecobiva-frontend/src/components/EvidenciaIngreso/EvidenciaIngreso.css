@@ -1,0 +1,147 @@
+.evidenciaIngreso {
+
+    margin-top: 25px;
+
+    border: 1px solid #dcdcdc;
+
+    border-radius: 10px;
+
+    padding: 20px;
+
+    background: #fafafa;
+
+}
+
+.evidenciaIngreso h3 {
+
+    margin: 0 0 20px;
+
+    color: #2c3e50;
+
+    font-size: 18px;
+
+}
+
+.evidenciaIngreso .inputGroup {
+
+    display: flex;
+
+    flex-direction: column;
+
+    margin-bottom: 18px;
+
+}
+
+.evidenciaIngreso label {
+
+    margin-bottom: 8px;
+
+    font-weight: 600;
+
+    color: #444;
+
+}
+
+.evidenciaIngreso textarea {
+
+    resize: vertical;
+
+    min-height: 90px;
+
+    border: 1px solid #ccc;
+
+    border-radius: 8px;
+
+    padding: 10px;
+
+    font-size: 14px;
+
+    outline: none;
+
+}
+
+.evidenciaIngreso textarea:focus {
+
+    border-color: #1976d2;
+
+}
+
+.evidenciaIngreso input[type=file] {
+
+    padding: 8px;
+
+}
+
+.galeriaEvidencias {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 15px;
+
+    margin-top: 15px;
+
+}
+
+.fotoPreview {
+
+    position: relative;
+
+    width: 140px;
+
+    height: 140px;
+
+    border-radius: 8px;
+
+    overflow: hidden;
+
+    border: 1px solid #ddd;
+
+    background: white;
+
+}
+
+.fotoPreview img {
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+
+}
+
+.fotoPreview button {
+
+    position: absolute;
+
+    top: 5px;
+
+    right: 5px;
+
+    width: 28px;
+
+    height: 28px;
+
+    border: none;
+
+    border-radius: 50%;
+
+    cursor: pointer;
+
+    background: rgba(0,0,0,.75);
+
+    color: white;
+
+    font-weight: bold;
+
+    transition: .2s;
+
+}
+
+.fotoPreview button:hover {
+
+    background: #d32f2f;
+
+}

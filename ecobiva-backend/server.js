@@ -22,11 +22,16 @@ const kardexRoutes = require("./routes/kardexRoutes");
 const ordenRoutes = require("./routes/ordenRoutes");
 const diagnosticoRoutes = require("./routes/diagnosticoRoutes");
 const facturaRoutes = require("./routes/facturaRoutes");
+const evidenciaRoutes = require("./routes/evidenciaRoutes");
+const alertaStockRoutes = require("./routes/alertaStockRoutes");
+const ordenGarantiaRoutes = require("./routes/ordenGarantiaRoutes");
+const terminoGarantiaRoutes = require("./routes/terminoGarantiaRoutes");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", mensaje: "Servidor ECOBIVA corriendo 🚗🔋" });
@@ -50,6 +55,10 @@ app.use("/api/kardex", kardexRoutes);
 app.use("/api/ordenes", ordenRoutes);
 app.use("/api/diagnosticos", diagnosticoRoutes);
 app.use("/api/facturas", facturaRoutes);
+app.use("/api/evidencias", evidenciaRoutes);
+app.use("/api/alertas-stock", alertaStockRoutes);
+app.use("/api/ordenes-garantia", ordenGarantiaRoutes);
+app.use("/api/terminos-garantia", terminoGarantiaRoutes);
 
 // Ruta de prueba para confirmar que los middlewares funcionan.
 app.get(
