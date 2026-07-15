@@ -128,6 +128,7 @@ export default function Vehiculos() {
           onChange={(e) => setBusqueda(e.target.value)}
         />
 
+        <div className="tableWrapper">
         <table>
           <thead>
             <tr>
@@ -198,6 +199,7 @@ export default function Vehiculos() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <DetailModal

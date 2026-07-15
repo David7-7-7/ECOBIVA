@@ -32,6 +32,16 @@
 
 }
 
+.camposTecnico{
+
+    display:grid;
+
+    grid-template-columns:1fr 1fr;
+
+    gap:18px;
+
+}
+
 .usuarioButtons{
 
     display:flex;

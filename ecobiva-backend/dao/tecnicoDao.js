@@ -69,7 +69,55 @@ async function obtenerPorId(idEmpleado, connection = pool) {
 }
 
 /**
+ * Crea el PerfilTecnico de un Empleado que ya existe (normalmente con su
+ * Usuario recién creado en la misma transacción). Es el reemplazo del viejo
+ * flujo de "Técnicos" como creador: ahora el único lugar que da de alta
+ * acceso al sistema es usuarioController.crear (y el sub-flujo de
+ * Empleados > crear-usuario), y ambos llaman aquí cuando el rol es Técnico
+ * para que Empleado + Usuario + PerfilTecnico queden completos en un solo
+ * paso atómico.
+ *
+ * `connection` debe pasarse cuando se llama dentro de una transacción
+ * externa, para que el commit/rollback sea uno solo.
+ */
+async function crearPerfilTecnico(
+  idEmpleado,
+  { especialidad, capacidadMaxima } = {},
+  connection = pool,
+) {
+  let capacidad = 3; // default de la columna (ver schema.sql)
+
+  if (
+    capacidadMaxima !== undefined &&
+    capacidadMaxima !== null &&
+    capacidadMaxima !== ""
+  ) {
+    const n = Number(capacidadMaxima);
+    if (!Number.isInteger(n) || n < 1) {
+      throw new Error(
+        "La capacidad máxima debe ser un número entero mayor o igual a 1.",
+      );
+    }
+    capacidad = n;
+  }
+
+  await connection.query(
+    `
+        INSERT INTO PerfilTecnico (idEmpleado, especialidad, cargaActual, capacidadMaxima)
+        VALUES (?, ?, 0, ?)
+    `,
+    [idEmpleado, especialidad || null, capacidad],
+  );
+}
+
+/**
  * Crea un técnico: Empleado + PerfilTecnico en una sola transacción.
+ *
+ * @deprecated Ya no se expone por API. Un "Técnico" creado sin Usuario
+ * quedaba invisible para la asignación automática de órdenes
+ * (obtenerDisponible() exige INNER JOIN Usuario). El alta de técnicos ahora
+ * pasa siempre por usuarioController.crear (rol "Tecnico"), que crea
+ * Empleado + Usuario + PerfilTecnico juntos vía crearPerfilTecnico().
  */
 async function crear(datos) {
   const connection = await pool.getConnection();
@@ -326,6 +374,7 @@ module.exports = {
   listar,
   obtenerPorId,
   crear,
+  crearPerfilTecnico,
   actualizar,
   desactivar,
   reactivar,

@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import "./FacturaPanel.css";
+import jsPDF from "jspdf";
 
-import Button from "../Button/Button";
 import { useAuth } from "../../context/AuthContext";
 import {
   obtenerFacturasPorOrden,
-  crearFacturaReparacion,
   marcarFacturaPagada,
 } from "../../services/facturaService";
+import {
+  obtenerReparacion,
+  listarRepuestosReparacion,
+} from "../../services/reparacionService";
 
 const METODOS_PAGO = ["Efectivo", "Tarjeta", "Transferencia", "Otro"];
 
@@ -16,23 +19,15 @@ const TIPO_LABELS = {
   reparacion: "Reparación",
 };
 
-const inicializarNuevaFactura = () => ({
-  subtotalManoObra: "",
-  subtotalRepuestos: "",
-  descuento: "",
-  impuestos: "",
-});
-
 export default function FacturaPanel({ orden, onOrdenActualizada }) {
   const { tieneAlgunRol } = useAuth();
   const puedeFacturar = tieneAlgunRol(["Admin", "Asesor"]);
 
   const [facturas, setFacturas] = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [nuevaFactura, setNuevaFactura] = useState(inicializarNuevaFactura());
-  const [creando, setCreando] = useState(false);
   const [pagoEnCurso, setPagoEnCurso] = useState(null);
   const [metodoPago, setMetodoPago] = useState(METODOS_PAGO[0]);
+  const [generandoPdf, setGenerandoPdf] = useState(null);
 
   useEffect(() => {
     cargar();
@@ -51,41 +46,6 @@ export default function FacturaPanel({ orden, onOrdenActualizada }) {
     }
   };
 
-  const tieneFacturaReparacion = facturas.some((f) => f.tipo === "reparacion");
-  const puedeCrearReparacion =
-    puedeFacturar && orden.estado === "finalizada" && !tieneFacturaReparacion;
-
-  const calcularTotal = () => {
-    const manoObra = Number(nuevaFactura.subtotalManoObra || 0);
-    const repuestos = Number(nuevaFactura.subtotalRepuestos || 0);
-    const descuento = Number(nuevaFactura.descuento || 0);
-    const impuestos = Number(nuevaFactura.impuestos || 0);
-    return manoObra + repuestos + impuestos - descuento;
-  };
-
-  const crearFactura = async () => {
-    setCreando(true);
-    try {
-      await crearFacturaReparacion({
-        idOrdenServicio: orden.idOrden,
-        subtotalManoObra: Number(nuevaFactura.subtotalManoObra || 0),
-        subtotalRepuestos: Number(nuevaFactura.subtotalRepuestos || 0),
-        descuento: Number(nuevaFactura.descuento || 0),
-        impuestos: Number(nuevaFactura.impuestos || 0),
-      });
-      setNuevaFactura(inicializarNuevaFactura());
-      await cargar();
-      if (onOrdenActualizada) await onOrdenActualizada();
-    } catch (error) {
-      console.error(error);
-      alert(
-        error?.response?.data?.error || "No fue posible crear la factura.",
-      );
-    } finally {
-      setCreando(false);
-    }
-  };
-
   const pagar = async (idFactura) => {
     setPagoEnCurso(idFactura);
     try {
@@ -100,6 +60,148 @@ export default function FacturaPanel({ orden, onOrdenActualizada }) {
       );
     } finally {
       setPagoEnCurso(null);
+    }
+  };
+
+  const descargarPdf = async (factura) => {
+    setGenerandoPdf(factura.idFactura);
+
+    try {
+      // La factura solo guarda los subtotales. El detalle (descripción de
+      // mano de obra y el listado de repuestos usados) vive en Reparacion /
+      // ReparacionRepuesto, así que para una factura tipo "reparacion" hay
+      // que ir a buscarlo aparte. Para tipo "diagnostico" no hace falta:
+      // subtotalManoObra ya es el costo del diagnóstico profundo y no hay
+      // repuestos asociados.
+      let descripcionManoObra = "";
+      let repuestos = [];
+
+      if (factura.tipo === "reparacion") {
+        try {
+          const [reparacion, listaRepuestos] = await Promise.all([
+            obtenerReparacion(orden.idOrden),
+            listarRepuestosReparacion(orden.idOrden),
+          ]);
+          descripcionManoObra = reparacion?.descripcionManoObra || "";
+          repuestos = listaRepuestos || [];
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      const doc = new jsPDF();
+      const margenIzq = 15;
+      let y = 20;
+
+      const saltoDeLinea = (alto = 7) => {
+        y += alto;
+        if (y > 280) {
+          doc.addPage();
+          y = 20;
+        }
+      };
+
+      doc.setFontSize(16);
+      doc.text("Factura", margenIzq, y);
+      saltoDeLinea(10);
+
+      doc.setFontSize(11);
+      doc.text(`Número: ${factura.numeroFactura || ""}`, margenIzq, y);
+      saltoDeLinea();
+      doc.text(`Tipo: ${TIPO_LABELS[factura.tipo] || factura.tipo}`, margenIzq, y);
+      saltoDeLinea();
+      doc.text(
+        `Fecha de emisión: ${
+          factura.fechaEmision
+            ? new Date(factura.fechaEmision).toLocaleDateString()
+            : "-"
+        }`,
+        margenIzq,
+        y,
+      );
+      saltoDeLinea(10);
+
+      doc.text(`Orden: ${orden.folio || ""}`, margenIzq, y);
+      saltoDeLinea();
+      doc.text(`Cliente: ${orden.clienteNombre || "-"}`, margenIzq, y);
+      saltoDeLinea();
+      doc.text(
+        `Vehículo: ${orden.vehiculoPlaca || ""} ${orden.vehiculoMarca || ""} ${orden.vehiculoModelo || ""}`.trim(),
+        margenIzq,
+        y,
+      );
+      saltoDeLinea(10);
+
+      doc.setFont(undefined, "bold");
+      doc.text("Mano de obra", margenIzq, y);
+      doc.setFont(undefined, "normal");
+      saltoDeLinea();
+      if (descripcionManoObra) {
+        const descripcionLineas = doc.splitTextToSize(descripcionManoObra, 180);
+        doc.text(descripcionLineas, margenIzq, y);
+        saltoDeLinea(descripcionLineas.length * 6);
+      }
+      doc.text(`Subtotal mano de obra: $${factura.subtotalManoObra ?? 0}`, margenIzq, y);
+      saltoDeLinea(10);
+
+      doc.setFont(undefined, "bold");
+      doc.text("Repuestos usados", margenIzq, y);
+      doc.setFont(undefined, "normal");
+      saltoDeLinea();
+      if (repuestos.length === 0) {
+        doc.text("Sin repuestos registrados.", margenIzq, y);
+        saltoDeLinea();
+      } else {
+        repuestos.forEach((rep) => {
+          const linea = `• ${rep.repuestoNombre} x${rep.cantidad} — $${rep.precioUnitario} c/u${
+            rep.descripcion ? ` (${rep.descripcion})` : ""
+          }`;
+          const lineasDivididas = doc.splitTextToSize(linea, 180);
+          doc.text(lineasDivididas, margenIzq, y);
+          saltoDeLinea(lineasDivididas.length * 6);
+        });
+      }
+      doc.text(`Subtotal repuestos: $${factura.subtotalRepuestos ?? 0}`, margenIzq, y);
+      saltoDeLinea(10);
+
+      doc.setFont(undefined, "bold");
+      doc.text("Totales", margenIzq, y);
+      doc.setFont(undefined, "normal");
+      saltoDeLinea();
+      doc.text(`Descuento: $${factura.descuento ?? 0}`, margenIzq, y);
+      saltoDeLinea();
+      doc.text(`Impuestos: $${factura.impuestos ?? 0}`, margenIzq, y);
+      saltoDeLinea();
+      doc.setFont(undefined, "bold");
+      doc.text(`Total: $${factura.total ?? 0}`, margenIzq, y);
+      doc.setFont(undefined, "normal");
+      saltoDeLinea(10);
+
+      doc.text(
+        `Estado de pago: ${factura.pagoConfirmado ? "Pagada" : "Pendiente"}`,
+        margenIzq,
+        y,
+      );
+      saltoDeLinea();
+      if (factura.pagoConfirmado) {
+        doc.text(`Método de pago: ${factura.metodoPago || "-"}`, margenIzq, y);
+        saltoDeLinea();
+        doc.text(
+          `Fecha de pago: ${
+            factura.fechaPago ? new Date(factura.fechaPago).toLocaleDateString() : "-"
+          }`,
+          margenIzq,
+          y,
+        );
+        saltoDeLinea();
+      }
+
+      doc.save(`factura-${factura.numeroFactura || factura.idFactura}.pdf`);
+    } catch (error) {
+      console.error(error);
+      alert("No fue posible generar el PDF de la factura.");
+    } finally {
+      setGenerandoPdf(null);
     }
   };
 
@@ -145,17 +247,29 @@ export default function FacturaPanel({ orden, onOrdenActualizada }) {
                 <td>{factura.total}</td>
                 <td>{factura.pagoConfirmado ? "Pagada" : "Pendiente"}</td>
                 <td>
-                  {puedeFacturar && !factura.pagoConfirmado && (
+                  <div className="facturaAcciones">
                     <button
-                      className="btnPagar"
-                      onClick={() => pagar(factura.idFactura)}
-                      disabled={pagoEnCurso === factura.idFactura}
+                      className="btnPdf"
+                      onClick={() => descargarPdf(factura)}
+                      disabled={generandoPdf === factura.idFactura}
                     >
-                      {pagoEnCurso === factura.idFactura
-                        ? "Marcando..."
-                        : "Marcar pagada"}
+                      {generandoPdf === factura.idFactura
+                        ? "Generando..."
+                        : "PDF"}
                     </button>
-                  )}
+
+                    {puedeFacturar && !factura.pagoConfirmado && (
+                      <button
+                        className="btnPagar"
+                        onClick={() => pagar(factura.idFactura)}
+                        disabled={pagoEnCurso === factura.idFactura}
+                      >
+                        {pagoEnCurso === factura.idFactura
+                          ? "Marcando..."
+                          : "Marcar pagada"}
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -176,72 +290,6 @@ export default function FacturaPanel({ orden, onOrdenActualizada }) {
               </option>
             ))}
           </select>
-        </div>
-      )}
-
-      {puedeCrearReparacion && (
-        <div className="facturaNueva">
-          <h4>Crear factura de reparación</h4>
-          <div className="detailGrid">
-            <div className="inputGroup">
-              <label>Mano de obra</label>
-              <input
-                type="number"
-                value={nuevaFactura.subtotalManoObra}
-                onChange={(e) =>
-                  setNuevaFactura({
-                    ...nuevaFactura,
-                    subtotalManoObra: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="inputGroup">
-              <label>Repuestos</label>
-              <input
-                type="number"
-                value={nuevaFactura.subtotalRepuestos}
-                onChange={(e) =>
-                  setNuevaFactura({
-                    ...nuevaFactura,
-                    subtotalRepuestos: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="inputGroup">
-              <label>Descuento</label>
-              <input
-                type="number"
-                value={nuevaFactura.descuento}
-                onChange={(e) =>
-                  setNuevaFactura({
-                    ...nuevaFactura,
-                    descuento: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="inputGroup">
-              <label>Impuestos</label>
-              <input
-                type="number"
-                value={nuevaFactura.impuestos}
-                onChange={(e) =>
-                  setNuevaFactura({
-                    ...nuevaFactura,
-                    impuestos: e.target.value,
-                  })
-                }
-              />
-            </div>
-          </div>
-          <p className="facturaTotal">
-            Total estimado: <strong>{calcularTotal()}</strong>
-          </p>
-          <Button variant="primary" onClick={crearFactura} disabled={creando}>
-            {creando ? "Creando..." : "Crear factura de reparación"}
-          </Button>
         </div>
       )}
     </section>

@@ -1,7 +1,7 @@
 import "./Tecnicos.css";
 
 import { useEffect, useState } from "react";
-import { FaPlus, FaUndo } from "react-icons/fa";
+import { FaUndo } from "react-icons/fa";
 
 import PageHeader from "../../components/PageHeader/PageHeader";
 import ActionButtons from "../../components/ActionButtons/ActionButtons";
@@ -67,12 +67,6 @@ export default function Tecnicos() {
     cargar();
   }, []);
 
-  function abrirCrear() {
-    setEditando(false);
-    setTecnicoEditando(null);
-    setModalOpen(true);
-  }
-
   function abrirEditar(tecnico) {
     setEditando(true);
     setTecnicoEditando(tecnico);
@@ -122,13 +116,7 @@ export default function Tecnicos() {
     <>
       <PageHeader
         title="Técnicos"
-        subtitle="Administración del personal técnico."
-        button={
-          <button className="btnNuevo" onClick={abrirCrear}>
-            <FaPlus />
-            Nuevo Técnico
-          </button>
-        }
+        subtitle="Gestión del personal técnico. Para dar de alta un técnico nuevo, usa Usuarios → Nuevo Usuario y elige el rol Técnico."
       />
 
       {error && <div className="alert alert-error">{error}</div>}

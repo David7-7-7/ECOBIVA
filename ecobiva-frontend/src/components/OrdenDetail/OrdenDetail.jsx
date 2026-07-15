@@ -17,6 +17,7 @@ export const ESTADO_LABELS = {
   pendiente_aprobacion: "Pendiente Aprobación",
   aprobada: "Aprobada",
   rechazada: "Rechazada",
+  pendiente_asignacion_reparacion: "Pendiente de Asignación (Reparación)",
   en_reparacion: "En Reparación",
   finalizada: "Finalizada",
   entregada: "Entregada",
@@ -30,6 +31,7 @@ export const ESTADO_VARIANT = {
   pendiente_aprobacion: "badgeStock",
   aprobada: "badgeActivo",
   rechazada: "badgeInactivo",
+  pendiente_asignacion_reparacion: "badgeStock",
   en_reparacion: "badgeProceso",
   finalizada: "badgeFinalizado",
   entregada: "badgeActivo",
@@ -41,11 +43,13 @@ export const ESTADO_VARIANT = {
 // pendiente_aprobacion -> aprobada/rechazada y rechazada -> aprobada NO se
 // exponen acá: esas se registran desde el panel de "Aprobación del cliente"
 // para mantener la trazabilidad de que fue el asesor quien la capturó.
-// pendiente_asignacion -> recibido TAMPOCO se expone acá: ese cambio de
-// estado no es un cambio de estado "manual" en sentido estricto, sino un
+// pendiente_asignacion -> en_diagnostico TAMPOCO se expone acá: ese cambio
+// de estado no es un cambio de estado "manual" en sentido estricto, sino un
 // efecto secundario de asignar un técnico a la orden (ver
-// ordenDao.actualizar). Permitir "recibido" en este dropdown dejaría
-// marcar la orden como recibida sin técnico asignado, rompiendo DEC-007.
+// ordenDao.actualizar). Permitir "en_diagnostico" en este dropdown dejaría
+// marcar la orden como en diagnóstico sin técnico asignado, rompiendo DEC-007.
+// "recibido" solo queda acá por compatibilidad con órdenes históricas que ya
+// estaban en ese estado; ninguna orden nueva llega a él.
 const TRANSICIONES_MANUALES = {
   pendiente_asignacion: ["cancelada"],
   recibido: ["en_diagnostico", "cancelada"],

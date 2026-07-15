@@ -38,6 +38,13 @@ export const autoasignarOrden = async (id) => {
   return data;
 };
 
+// Igual que autoasignarOrden, pero para la cola de reparación: el técnico
+// autenticado se asigna a sí mismo una orden en "pendiente_asignacion_reparacion".
+export const autoasignarReparacionOrden = async (id) => {
+  const { data } = await api.patch(`/ordenes/${id}/autoasignar-reparacion`);
+  return data;
+};
+
 // Registra la respuesta del cliente (aprobado/rechazado) frente al
 // diagnóstico de la orden. La captura hoy es remota: el asesor la marca
 // en el sistema después de hablar con el cliente por fuera (WhatsApp/llamada).

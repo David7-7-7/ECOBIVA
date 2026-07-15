@@ -3,6 +3,12 @@
   margin-top: 16px;
 }
 
+.facturaAcciones {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .btnPagar {
   background: #dcfce7;
   color: #15803d;
@@ -15,6 +21,22 @@
 }
 
 .btnPagar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btnPdf {
+  background: #e0e7ff;
+  color: #4338ca;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.btnPdf:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

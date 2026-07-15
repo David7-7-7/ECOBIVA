@@ -1,5 +1,4 @@
 const tecnicoDao = require("../dao/tecnicoDao");
-const empleadoDao = require("../dao/empleadoDao");
 const ordenDao = require("../dao/ordenDao");
 const { registrarAccion } = require("../utils/auditoria");
 
@@ -25,39 +24,6 @@ async function obtenerPorId(req, res) {
   } catch (error) {
     console.error(error);
     res.status(500).json({ ok: false, mensaje: "Error consultando técnico." });
-  }
-}
-
-async function crear(req, res) {
-  try {
-    const existente = await empleadoDao.obtenerPorDocumento(req.body.documento);
-    if (existente) {
-      return res
-        .status(409)
-        .json({
-          ok: false,
-          mensaje: "Ya existe un empleado con ese documento.",
-        });
-    }
-
-    const tecnico = await tecnicoDao.crear(req.body);
-
-    await registrarAccion(req, {
-      accion: "CREAR_TECNICO",
-      modulo: "TECNICOS",
-      detalle: `Se creó el técnico:\nNombre: ${tecnico.nombre}\nDocumento: ${tecnico.documento}\nEspecialidad: ${tecnico.especialidad || "N/A"}`,
-    });
-
-    res
-      .status(201)
-      .json({
-        ok: true,
-        mensaje: "Técnico creado correctamente.",
-        data: tecnico,
-      });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ ok: false, mensaje: error.message });
   }
 }
 
@@ -155,7 +121,6 @@ async function reactivar(req, res) {
 module.exports = {
   listar,
   obtenerPorId,
-  crear,
   actualizar,
   desactivar,
   reactivar,

@@ -96,7 +96,8 @@ export const empleadosApi = {
 export const tecnicosApi = {
   listar: () => api.get("/tecnicos"),
   obtenerPorId: (id) => api.get(`/tecnicos/${id}`),
-  crear: (payload) => api.post("/tecnicos", payload),
+  // Ya no existe POST /tecnicos: el alta se hace desde Usuarios (rol
+  // Tecnico) o desde Empleados > crear-usuario.
   editar: (id, payload) => api.put(`/tecnicos/${id}`, payload),
   desactivar: (id) => api.patch(`/tecnicos/${id}/desactivar`),
   reactivar: (id) => api.patch(`/tecnicos/${id}/reactivar`),

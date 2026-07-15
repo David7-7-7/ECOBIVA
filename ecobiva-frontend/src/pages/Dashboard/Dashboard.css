@@ -38,6 +38,106 @@ border-collapse:collapse;
 
 }
 
+/* --- Encabezado y tarjetas resumen del Dashboard --- */
+
+.page-header{
+
+margin-bottom:24px;
+
+}
+
+.eyebrow{
+
+font-size:12px;
+
+font-weight:700;
+
+text-transform:uppercase;
+
+letter-spacing:.05em;
+
+color:#2563eb;
+
+}
+
+.page-header h2{
+
+margin:6px 0 0 0;
+
+font-size:24px;
+
+color:#0f172a;
+
+}
+
+.grid{
+
+display:grid;
+
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+
+gap:18px;
+
+}
+
+.stat-card{
+
+background:white;
+
+border-radius:16px;
+
+padding:22px;
+
+box-shadow:0 8px 20px rgba(0,0,0,.08);
+
+transition:.25s;
+
+}
+
+.stat-card:hover{
+
+transform:translateY(-4px);
+
+}
+
+.stat-card .label{
+
+font-size:12px;
+
+font-weight:600;
+
+text-transform:uppercase;
+
+letter-spacing:.04em;
+
+color:#64748b;
+
+margin-bottom:8px;
+
+}
+
+.stat-card .value{
+
+font-size:22px;
+
+font-weight:700;
+
+color:#0f172a;
+
+}
+
+@media (max-width: 700px) {
+
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  .page-header h2{
+    font-size:20px;
+  }
+
+}
+
 th{
 
 background:#2563eb;

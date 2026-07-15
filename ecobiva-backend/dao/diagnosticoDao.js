@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const tecnicoDao = require("./tecnicoDao");
 
 // -----------------------------------------------------------------------------
 // Un Diagnostico es 1:1 con una OrdenServicio (columna idOrdenServicio es
@@ -26,7 +27,9 @@ async function listar(idUsuario = null, esTecnico = false) {
       d.idDiagnostico,
       d.tipoDiagnostico,
       d.bloqueado,
-      d.fechaEnvio
+      d.fechaEnvio,
+
+      et.nombre AS tecnicoNombre
 
     FROM OrdenServicio o
 
@@ -38,6 +41,11 @@ async function listar(idUsuario = null, esTecnico = false) {
 
     LEFT JOIN Diagnostico d
       ON d.idOrdenServicio = o.idOrden
+
+    LEFT JOIN Usuario ut
+      ON ut.idUsuario = o.idTecnico
+    LEFT JOIN Empleado et
+      ON et.idEmpleado = ut.idEmpleado
 
     WHERE o.estado IN ('en_diagnostico','pendiente_aprobacion')
   `;
@@ -143,7 +151,11 @@ async function guardar(idOrdenServicio, datos) {
     let nivelBateria = datos.nivelBateria ?? existente?.nivelBateria ?? null;
     if (nivelBateria !== null && nivelBateria !== undefined) {
       nivelBateria = Number(nivelBateria);
-      if (Number.isNaN(nivelBateria) || nivelBateria < 0 || nivelBateria > 100) {
+      if (
+        Number.isNaN(nivelBateria) ||
+        nivelBateria < 0 ||
+        nivelBateria > 100
+      ) {
         throw new Error("nivelBateria debe ser un número entre 0 y 100.");
       }
     }
@@ -197,7 +209,7 @@ async function enviarAAprobacion(idOrdenServicio, idUsuario) {
     await connection.beginTransaction();
 
     const [ordenRows] = await connection.query(
-      "SELECT estado FROM OrdenServicio WHERE idOrden = ?",
+      "SELECT estado, idTecnico FROM OrdenServicio WHERE idOrden = ? FOR UPDATE",
       [idOrdenServicio],
     );
     const orden = ordenRows[0];
@@ -230,11 +242,24 @@ async function enviarAAprobacion(idOrdenServicio, idUsuario) {
       [idOrdenServicio],
     );
 
+    // El técnico termina su parte (el diagnóstico) acá, no cuando la orden
+    // se entrega: se libera cupo de inmediato para que pueda tomar otro
+    // diagnóstico o una reparación mientras el cliente decide. No se borra
+    // OrdenServicio.idTecnico (se conserva como referencia de quién
+    // diagnosticó); solo deja de contar contra su cargaActual.
+    if (orden.idTecnico) {
+      await tecnicoDao.decrementarCargaPorUsuario(orden.idTecnico, connection);
+
+      // eslint-disable-next-line global-require
+      const ordenDao = require("./ordenDao");
+      await ordenDao.intentarAsignarColasEspera(connection);
+    }
+
     await connection.query(
       `
             INSERT INTO HistorialEstado
             (estadoAnterior, estadoNuevo, usuarioId, motivo, idOrdenServicio)
-            VALUES (?, 'pendiente_aprobacion', ?, 'Diagnóstico enviado a aprobación del cliente', ?)
+            VALUES (?, 'pendiente_aprobacion', ?, 'Diagnóstico enviado a aprobación del cliente (técnico liberado)', ?)
         `,
       [orden.estado, idUsuario, idOrdenServicio],
     );

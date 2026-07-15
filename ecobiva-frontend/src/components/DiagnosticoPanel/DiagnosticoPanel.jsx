@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./DiagnosticoPanel.css";
+import jsPDF from "jspdf";
 
 import Button from "../Button/Button";
 import { useAuth } from "../../context/AuthContext";
@@ -155,6 +156,86 @@ export default function DiagnosticoPanel({ orden, onOrdenActualizada }) {
     }
   };
 
+  const descargarPdf = () => {
+    const doc = new jsPDF();
+    const margenIzq = 15;
+    let y = 20;
+
+    const saltoDeLinea = (alto = 7) => {
+      y += alto;
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+    };
+
+    doc.setFontSize(16);
+    doc.text("Diagnóstico de vehículo", margenIzq, y);
+    saltoDeLinea(10);
+
+    doc.setFontSize(11);
+    doc.text(`Orden: ${orden.folio || ""}`, margenIzq, y);
+    saltoDeLinea();
+    doc.text(`Cliente: ${orden.clienteNombre || "-"}`, margenIzq, y);
+    saltoDeLinea();
+    doc.text(
+      `Vehículo: ${orden.vehiculoPlaca || ""} ${orden.vehiculoMarca || ""} ${orden.vehiculoModelo || ""}`.trim(),
+      margenIzq,
+      y,
+    );
+    saltoDeLinea();
+    doc.text(`Técnico: ${orden.tecnicoNombre || "-"}`, margenIzq, y);
+    saltoDeLinea(10);
+
+    if (orden.motivoIngreso) {
+      doc.setFont(undefined, "bold");
+      doc.text("Motivo de ingreso reportado por el cliente:", margenIzq, y);
+      doc.setFont(undefined, "normal");
+      saltoDeLinea();
+      const motivoLineas = doc.splitTextToSize(orden.motivoIngreso, 180);
+      doc.text(motivoLineas, margenIzq, y);
+      saltoDeLinea(motivoLineas.length * 6 + 4);
+    }
+
+    doc.setFont(undefined, "bold");
+    doc.text("Resultado del diagnóstico", margenIzq, y);
+    doc.setFont(undefined, "normal");
+    saltoDeLinea();
+    doc.text(
+      `Tipo: ${tipoDiagnostico === "profundo" ? "Profundo (con costo)" : "Superficial (gratis)"}`,
+      margenIzq,
+      y,
+    );
+    saltoDeLinea();
+    doc.text(`Nivel de batería: ${nivelBateria !== "" ? `${nivelBateria}%` : "-"}`, margenIzq, y);
+    saltoDeLinea();
+    if (tipoDiagnostico === "profundo") {
+      doc.text(`Costo del diagnóstico: $${costoDiagnostico || 0}`, margenIzq, y);
+      saltoDeLinea();
+    }
+    saltoDeLinea(4);
+
+    doc.setFont(undefined, "bold");
+    doc.text("Checklist", margenIzq, y);
+    doc.setFont(undefined, "normal");
+    saltoDeLinea();
+
+    const filasConContenido = filas.filter((f) => f.item?.trim());
+    if (filasConContenido.length === 0) {
+      doc.text("Sin ítems registrados.", margenIzq, y);
+      saltoDeLinea();
+    } else {
+      filasConContenido.forEach((fila) => {
+        const linea = `• ${fila.item}${fila.observacion ? `: ${fila.observacion}` : ""}`;
+        const lineasDivididas = doc.splitTextToSize(linea, 180);
+        doc.text(lineasDivididas, margenIzq, y);
+        saltoDeLinea(lineasDivididas.length * 6);
+      });
+    }
+
+    doc.save(`diagnostico-${orden.folio || orden.idOrden}.pdf`);
+  };
+
   if (cargando) {
     return (
       <section className="detailSection">
@@ -178,9 +259,19 @@ export default function DiagnosticoPanel({ orden, onOrdenActualizada }) {
 
   return (
     <section className="detailSection">
-      <h3>Diagnóstico</h3>
+      <div className="diagnosticoHeader">
+        <h3>Diagnóstico</h3>
+        {diagnostico && (
+          <Button variant="secondary" onClick={descargarPdf}>
+            Descargar PDF
+          </Button>
+        )}
+      </div>
       <p className="diagnosticoFolio">
         <strong>Orden:</strong> {orden.folio}
+      </p>
+      <p className="diagnosticoFolio">
+        <strong>Técnico asignado:</strong> {orden.tecnicoNombre || "Sin asignar"}
       </p>
       {orden.motivoIngreso && (
         <p className="diagnosticoFolio">

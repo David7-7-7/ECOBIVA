@@ -48,3 +48,41 @@ ul{
 list-style:none;
 
 }
+
+img, svg {
+  max-width: 100%;
+}
+
+/* Contenedor universal para tablas: evita que se salgan del layout
+   y permite scroll horizontal solo dentro de la tabla, no en toda la página */
+.tableWrapper,
+.tableContainer {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.tableWrapper table,
+.tableContainer table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+
+.tableWrapper th,
+.tableWrapper td {
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .tableWrapper th,
+  .tableWrapper td,
+  .tableContainer th,
+  .tableContainer td {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}

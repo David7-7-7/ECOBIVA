@@ -70,6 +70,14 @@ router.patch(
   ordenController.autoasignar,
 );
 
+// Igual que autoasignar(), pero para la cola de reparación: un técnico se
+// asigna a sí mismo una orden en "pendiente_asignacion_reparacion".
+router.patch(
+  "/:id/autoasignar-reparacion",
+  verificarRol(["Tecnico"]),
+  ordenController.autoasignarReparacion,
+);
+
 // =====================
 // APROBACIÓN DEL CLIENTE
 // El asesor es quien registra la respuesta del cliente (hoy es remota:

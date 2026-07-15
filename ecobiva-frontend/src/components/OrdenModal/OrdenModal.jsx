@@ -24,12 +24,22 @@ export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
   const [vehiculos, setVehiculos] = useState([]);
   const [tecnicos, setTecnicos] = useState([]);
   const [asesores, setAsesores] = useState([]);
+  const [administradores, setAdministradores] = useState([]);
   const [observacionesIngreso, setObservacionesIngreso] = useState("");
   const [fotosIngreso, setFotosIngreso] = useState([]);
 
   const clienteSeleccionado = clientes.find(
     (cliente) => String(cliente.idCliente) === String(orden.idCliente),
   );
+
+  // Cada técnico soporta como máximo unos pocos diagnósticos pendientes a la
+  // vez (capacidadMaxima, normalmente 3). Mientras alguno tenga cupo, la
+  // asignación automática ya se encarga; el respaldo manual (Asesor/Admin)
+  // solo se ofrece cuando TODOS los técnicos activos están al tope.
+  const hayTecnicoConCupo = tecnicos.some(
+    (t) => Number(t.cargaActual) < Number(t.capacidadMaxima),
+  );
+  const respaldoSinCupo = [...asesores, ...administradores];
 
   useEffect(() => {
     if (!open) return;
@@ -82,17 +92,34 @@ export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
       const data = await listarUsuarios();
       const usuarios = data || [];
       setAsesores(usuarios.filter((u) => (u.roles || []).includes("Asesor")));
+      // Candidatos de respaldo para asignación manual de "técnico" cuando
+      // ningún técnico real tiene cupo disponible (ver nota en el select de
+      // técnico más abajo). Solo usuarios activos con rol Admin.
+      setAdministradores(
+        usuarios.filter(
+          (u) => (u.roles || []).includes("Admin") && Number(u.estado) === 1,
+        ),
+      );
     } catch (error) {
       console.error(error);
       // No bloqueamos el formulario si no se pudo cargar la lista de usuarios;
-      // simplemente el select de asesor quedará vacío.
+      // simplemente los selects quedarán vacíos.
     }
   };
 
   const cargarTecnicos = async () => {
     try {
-      const data = await listarTecnicos();
-      const tecnicosData = data || [];
+      const respuesta = await listarTecnicos();
+      // GET /tecnicos responde { ok, data: [...] } (a diferencia de
+      // /usuarios y /ordenes, que devuelven el arreglo directamente), así
+      // que hay que desenvolver .data. Antes esto quedaba como
+      // `respuesta || []`, es decir el objeto {ok, data} completo, y el
+      // .filter() de abajo tiraba un TypeError silencioso (atrapado por el
+      // catch): `tecnicos` quedaba SIEMPRE en [] y por lo tanto
+      // `hayTecnicoConCupo` era SIEMPRE false, aunque hubiera técnicos con
+      // cupo real. Eso hacía que el select de técnico apareciera vacío y
+      // que el sistema dijera "todos los técnicos están al tope" sin serlo.
+      const tecnicosData = respuesta?.data || [];
       // Solo técnicos activos y con cuenta de usuario (Orden.idTecnico
       // referencia Usuario.idUsuario, así que sin cuenta no se pueden asignar).
       setTecnicos(
@@ -263,14 +290,35 @@ export default function OrdenModal({ open, ordenEditar, onClose, onSave }) {
                 setOrden({ ...orden, idTecnico: e.target.value })
               }
             >
-              <option value="">Sin asignar</option>
+              <option value="">
+                {ordenEditar
+                  ? "Sin asignar"
+                  : "Automático (el sistema elige el técnico con menos carga)"}
+              </option>
               {tecnicos.map((tecnico) => (
                 <option key={tecnico.idUsuario} value={tecnico.idUsuario}>
                   {tecnico.nombre} — Carga: {tecnico.cargaActual}/
                   {tecnico.capacidadMaxima}
                 </option>
               ))}
+              {!hayTecnicoConCupo && respaldoSinCupo.length > 0 && (
+                <optgroup label="Sin cupo de técnicos — asignar a Asesor/Admin">
+                  {respaldoSinCupo.map((usuario) => (
+                    <option key={usuario.idUsuario} value={usuario.idUsuario}>
+                      {usuario.nombreEmpleado || usuario.correo} (
+                      {(usuario.roles || []).join(", ")})
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
+            {!hayTecnicoConCupo && (
+              <p className="inputHint">
+                Todos los técnicos están al tope de diagnósticos pendientes.
+                Puedes dejarla sin asignar (quedará en cola de espera) o
+                asignarla manualmente a un Asesor o Administrador.
+              </p>
+            )}
           </div>
 
           <Input

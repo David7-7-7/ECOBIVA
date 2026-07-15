@@ -259,18 +259,6 @@ export default function Ordenes() {
         onClose={() => setConfirmDelete(false)}
         onConfirm={confirmarEliminarOrden}
       />
-      <ActionButtons
-        onView={() => verDetalle(orden)}
-        onEdit={() => {
-          setOrdenEditar(orden);
-          setModalOpen(true);
-        }}
-        onDelete={() => {
-          setOrdenEliminar(orden);
-          setConfirmDelete(true);
-        }}
-        onDiagnosticar={() => navigate(`/diagnostico/${orden.idOrden}`)}
-      />
     </>
   );
 }

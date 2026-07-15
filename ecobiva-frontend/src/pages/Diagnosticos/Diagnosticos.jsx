@@ -8,6 +8,7 @@ import PageHeader from "../../components/PageHeader/PageHeader";
 import SearchBar from "../../components/SearchBar/SearchBar";
 import StatusBadge from "../../components/StatusBadge/StatusBadge";
 import DiagnosticoPanel from "../../components/DiagnosticoPanel/DiagnosticoPanel";
+import EvidenciasOrden from "../../components/EvidenciaIngreso/EvidenciasOrden";
 import Button from "../../components/Button/Button";
 
 import { listarDiagnosticos } from "../../services/diagnosticoService";
@@ -102,7 +103,10 @@ export default function Diagnostico() {
         />
 
         {!cargando && orden && (
-          <DiagnosticoPanel orden={orden} onOrdenActualizada={refrescarOrden} />
+          <>
+            <EvidenciasOrden idOrden={orden.idOrden} />
+            <DiagnosticoPanel orden={orden} onOrdenActualizada={refrescarOrden} />
+          </>
         )}
       </>
     );
@@ -138,6 +142,8 @@ export default function Diagnostico() {
 
                   <th>Vehículo</th>
 
+                  <th>Técnico</th>
+
                   <th>Estado</th>
 
                   <th></th>
@@ -156,6 +162,8 @@ export default function Diagnostico() {
                       <br />
                       {d.placa}
                     </td>
+
+                    <td>{d.tecnicoNombre || "Sin asignar"}</td>
 
                     <td>
                       <StatusBadge
@@ -177,7 +185,7 @@ export default function Diagnostico() {
 
                 {filtrados.length === 0 && (
                   <tr>
-                    <td colSpan="5">No hay órdenes para diagnosticar.</td>
+                    <td colSpan="6">No hay órdenes para diagnosticar.</td>
                   </tr>
                 )}
               </tbody>

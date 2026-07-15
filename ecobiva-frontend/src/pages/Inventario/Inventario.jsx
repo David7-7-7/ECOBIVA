@@ -142,6 +142,7 @@ export default function Inventario() {
         {error && <div className="errorMensaje">{error}</div>}
 
         {modo === "repuestos" && (
+          <div className="tableWrapper">
           <table>
             <thead>
               <tr>
@@ -182,9 +183,11 @@ export default function Inventario() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
 
         {modo === "baterias" && (
+          <div className="tableWrapper">
           <table>
             <thead>
               <tr>
@@ -227,9 +230,11 @@ export default function Inventario() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
 
         {modo === "kardex" && (
+          <div className="tableWrapper">
           <table>
             <thead>
               <tr>
@@ -254,6 +259,7 @@ export default function Inventario() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

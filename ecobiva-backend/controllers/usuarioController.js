@@ -3,6 +3,7 @@ const pool = require("../config/db");
 const usuarioDao = require("../dao/usuarioDao");
 const empleadoDao = require("../dao/empleadoDao");
 const rolDao = require("../dao/rolDao");
+const tecnicoDao = require("../dao/tecnicoDao");
 const validarPassword = require("../utils/validarPassword");
 const preguntaDao = require("../dao/preguntaSeguridadDao");
 
@@ -23,6 +24,8 @@ async function crear(req, res) {
     cargoActual,
     tarifaHora,
     preguntas,
+    especialidad,
+    capacidadMaxima,
   } = req.body;
 
   // Extraer roles del usuario autenticado en la sesión actual
@@ -108,6 +111,24 @@ async function crear(req, res) {
       req.usuario.idUsuario,
       conn,
     );
+
+    // Si el rol es Técnico, el alta queda incompleta sin su PerfilTecnico
+    // (especialidad/capacidad/cargaActual). Antes esto vivía en un módulo
+    // aparte ("Técnicos") que nunca creaba el Usuario; ahora ambas cosas
+    // nacen juntas y atómicas, así el técnico nuevo siempre es visible
+    // para la asignación automática de órdenes (ver tecnicoDao.obtenerDisponible).
+    if (nombreRol.toLowerCase() === "tecnico") {
+      try {
+        await tecnicoDao.crearPerfilTecnico(
+          idEmpleado,
+          { especialidad, capacidadMaxima },
+          conn,
+        );
+      } catch (errPerfil) {
+        await conn.rollback();
+        return res.status(400).json({ error: errPerfil.message });
+      }
+    }
 
     const preguntasConRespuestaHash = [];
     if (preguntas && Array.isArray(preguntas)) {

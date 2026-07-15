@@ -252,7 +252,8 @@ ${empleado.documento}`,
 
 async function crearUsuario(req, res) {
   try {
-    const { correo, password, idRol } = req.body;
+    const { correo, password, idRol, especialidad, capacidadMaxima } =
+      req.body;
 
     if (!correo || !password || !idRol) {
       return res.status(400).json({
@@ -274,6 +275,8 @@ async function crearUsuario(req, res) {
       idRol,
 
       req.usuario.idUsuario,
+
+      { especialidad, capacidadMaxima },
     );
 
     await registrarAccion(req, {

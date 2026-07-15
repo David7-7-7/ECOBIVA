@@ -16,6 +16,8 @@ const VACIO = {
   nombreRol: "",
   cargoActual: "",
   tarifaHora: "",
+  especialidad: "",
+  capacidadMaxima: "",
   preguntas: [
     { idPregunta: "", respuesta: "" },
     { idPregunta: "", respuesta: "" },
@@ -220,6 +222,35 @@ export default function UsuarioModal({
             ))}
           </select>
         </div>
+
+        {!editando && form.nombreRol.toLowerCase() === "tecnico" && (
+          <div className="camposTecnico">
+            <Input
+              label="Especialidad"
+              value={form.especialidad}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  especialidad: e.target.value,
+                })
+              }
+            />
+
+            <Input
+              label="Capacidad de órdenes simultáneas"
+              type="number"
+              min="1"
+              placeholder="3 (por defecto)"
+              value={form.capacidadMaxima}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  capacidadMaxima: e.target.value,
+                })
+              }
+            />
+          </div>
+        )}
 
         {!editando &&
           form.preguntas.map((pregunta, index) => (

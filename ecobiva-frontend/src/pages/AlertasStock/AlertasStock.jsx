@@ -45,6 +45,7 @@ export default function AlertasStock() {
         </div>
         {error && <p className="inputError">{error}</p>}
         {cargando ? <p>Cargando alertas...</p> : (
+          <div className="tableWrapper">
           <table>
             <thead><tr><th>Fecha</th><th>Repuesto</th><th>Stock</th><th>Mínimo</th><th>Estado</th><th>Acción</th></tr></thead>
             <tbody>
@@ -58,6 +59,7 @@ export default function AlertasStock() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </>

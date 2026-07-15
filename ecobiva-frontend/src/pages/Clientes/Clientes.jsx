@@ -106,6 +106,7 @@ export default function Clientes() {
           onChange={(e) => setBusqueda(e.target.value)}
         />
 
+        <div className="tableWrapper">
         <table>
           <thead>
             <tr>
@@ -173,6 +174,7 @@ export default function Clientes() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <ClienteModal

@@ -1,0 +1,66 @@
+.reparacionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.reparacionFolio {
+  margin: 4px 0;
+  font-size: 14px;
+  color: #334155;
+}
+
+.reparacionBloqueada {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 12px 15px;
+  margin: 12px 0 18px;
+  font-size: 14px;
+}
+
+.reparacionAcciones {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.repuestosWrapper {
+  margin-top: 22px;
+}
+
+.repuestosTable {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+}
+
+.repuestosTable th,
+.repuestosTable td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 14px;
+}
+
+.repuestosTable .fotoPreview img {
+  width: 42px;
+  height: 42px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.repuestoNuevo {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px dashed #94a3b8;
+  border-radius: 10px;
+}
+
+.repuestoNuevo .detailGrid {
+  margin-bottom: 12px;
+}

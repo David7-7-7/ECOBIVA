@@ -1,12 +1,32 @@
 const pool = require("../config/db");
 const tecnicoDao = require("./tecnicoDao");
+const usuarioDao = require("./usuarioDao");
+// reparacionDao se requiere de forma diferida (dentro de las funciones que
+// lo usan) porque reparacionDao.js requiere este mismo archivo para poder
+// generar el número de factura y resolver las colas de espera al finalizar
+// una reparación (referencia circular). Para cuando esas funciones se
+// ejecutan de verdad, Node ya cargó completamente ambos módulos.
 
 // -----------------------------------------------------------------------------
 // Estados válidos y transiciones permitidas.
 //
-// recibido -> en_diagnostico -> pendiente_aprobacion -> aprobada -> en_reparacion -> finalizada -> entregada
-//                                                     -> rechazada (el cliente puede cambiar de opinión: rechazada -> aprobada)
+// pendiente_asignacion -> en_diagnostico -> pendiente_aprobacion -> aprobada -> [pendiente_asignacion_reparacion ->] en_reparacion -> finalizada -> entregada
+//                                                                 -> rechazada (el cliente puede cambiar de opinión: rechazada -> aprobada)
 // cualquier estado no terminal puede pasar a cancelada.
+//
+// DECISIÓN: la orden entra directo a "en_diagnostico" en cuanto tiene
+// técnico asignado (al crearse, al asignarse manualmente, al autoasignarse o
+// al liberarse cupo desde la cola de espera) — ya no pasa por un estado
+// intermedio "recibido". "recibido" se conserva en ESTADOS/TRANSICIONES
+// únicamente por compatibilidad con órdenes históricas que ya quedaron en
+// ese estado antes de este cambio; ninguna orden nueva llega a él.
+//
+// NUEVO (módulo de Reparación): al aprobarse el diagnóstico (ver
+// registrarAprobacion -> moverAReparacion), la orden intenta encontrar
+// técnico automáticamente, igual que al crearse. Si hay uno con cupo, pasa
+// directo a "en_reparacion"; si no, queda en "pendiente_asignacion_reparacion"
+// (cola de espera para reparación, análoga a "pendiente_asignacion" para
+// diagnóstico) hasta que algún técnico libere cupo.
 //
 // "entregada" solo se permite si la orden ya tiene una Factura (ver
 // facturaDao) — se valida en actualizarEstado más abajo.
@@ -18,6 +38,7 @@ const ESTADOS = [
   "pendiente_aprobacion",
   "aprobada",
   "rechazada",
+  "pendiente_asignacion_reparacion",
   "en_reparacion",
   "finalizada",
   "entregada",
@@ -25,19 +46,35 @@ const ESTADOS = [
 ];
 
 const TRANSICIONES = {
-  pendiente_asignacion: ["recibido", "cancelada"],
+  pendiente_asignacion: ["en_diagnostico", "cancelada"],
 
+  // Solo relevante para órdenes históricas que ya estaban en "recibido".
   recibido: ["en_diagnostico", "cancelada"],
   en_diagnostico: ["pendiente_aprobacion", "cancelada"],
   pendiente_aprobacion: ["aprobada", "rechazada", "cancelada"],
   // El cliente rechazó, pero puede cambiar de opinión más adelante.
   rechazada: ["aprobada", "cancelada"],
-  aprobada: ["en_reparacion", "cancelada"],
+  // "en_reparacion" y "pendiente_asignacion_reparacion" ya NO se disparan a
+  // mano: los aplica automáticamente moverAReparacion() en cuanto se aprueba
+  // el diagnóstico (mismo criterio que "en_diagnostico" no es manual).
+  aprobada: ["en_reparacion", "pendiente_asignacion_reparacion", "cancelada"],
+  pendiente_asignacion_reparacion: ["en_reparacion", "cancelada"],
   en_reparacion: ["finalizada", "cancelada"],
   finalizada: ["entregada"],
   entregada: [],
   cancelada: [],
 };
+
+// Estados en los que un técnico está efectivamente ocupado con la orden
+// (cuenta contra su cargaActual). Se usa para decidir cuándo cancelar una
+// orden debe liberar cupo: si el estado anterior no está en esta lista, el
+// técnico ya se había liberado antes (ver diagnosticoDao.enviarAAprobacion y
+// reparacionDao.finalizar) y no hay nada que descontar de nuevo.
+const ESTADOS_CON_TECNICO_OCUPADO = [
+  "recibido",
+  "en_diagnostico",
+  "en_reparacion",
+];
 
 const SELECT_BASE = `
     SELECT
@@ -133,6 +170,11 @@ async function generarFolio(connection) {
   return folio;
 }
 
+/**
+ * Resuelve la cola de espera de DIAGNÓSTICO: toma la orden más antigua en
+ * "pendiente_asignacion" (sin técnico) y, si hay alguno disponible, se la
+ * asigna y la pasa a "en_diagnostico".
+ */
 async function asignarPrimeraOrdenPendiente(connection) {
   const [ordenes] = await connection.query(`
         SELECT idOrden
@@ -158,7 +200,7 @@ async function asignarPrimeraOrdenPendiente(connection) {
   await connection.query(
     `
         UPDATE OrdenServicio
-        SET idTecnico = ?, estado = 'recibido'
+        SET idTecnico = ?, estado = 'en_diagnostico'
         WHERE idOrden = ?
         `,
     [idTecnico, idOrden],
@@ -179,7 +221,7 @@ async function asignarPrimeraOrdenPendiente(connection) {
         VALUES
         (
             'pendiente_asignacion',
-            'recibido',
+            'en_diagnostico',
             NULL,
             'Asignación automática por liberación de técnico',
             ?
@@ -190,6 +232,84 @@ async function asignarPrimeraOrdenPendiente(connection) {
 
   return idOrden;
 }
+
+/**
+ * Resuelve la cola de espera de REPARACIÓN: toma la orden más antigua en
+ * "pendiente_asignacion_reparacion" (aprobada por el cliente, pero sin
+ * técnico libre en el momento de la aprobación) y, si hay alguno disponible,
+ * se la asigna, actualiza el registro de Reparacion (idTecnico) y la pasa a
+ * "en_reparacion". Es el equivalente de asignarPrimeraOrdenPendiente() para
+ * la segunda etapa del flujo (ver módulo de Reparación).
+ */
+async function asignarPrimeraOrdenPendienteReparacion(connection) {
+  const [ordenes] = await connection.query(`
+        SELECT idOrden
+        FROM OrdenServicio
+        WHERE estado = 'pendiente_asignacion_reparacion'
+        ORDER BY fechaCreacion ASC
+        LIMIT 1
+        FOR UPDATE
+    `);
+
+  if (ordenes.length === 0) {
+    return null;
+  }
+
+  const idTecnico = await tecnicoDao.obtenerDisponible(connection);
+
+  if (!idTecnico) {
+    return null;
+  }
+
+  const idOrden = ordenes[0].idOrden;
+
+  await connection.query(
+    `
+        UPDATE OrdenServicio
+        SET idTecnico = ?, estado = 'en_reparacion'
+        WHERE idOrden = ?
+        `,
+    [idTecnico, idOrden],
+  );
+
+  await tecnicoDao.incrementarCargaPorUsuario(idTecnico, connection);
+
+  const reparacionDao = require("./reparacionDao");
+  await reparacionDao.asignarTecnico(idOrden, idTecnico, connection);
+
+  await connection.query(
+    `
+        INSERT INTO HistorialEstado
+        (estadoAnterior, estadoNuevo, usuarioId, motivo, idOrdenServicio)
+        VALUES ('pendiente_asignacion_reparacion', 'en_reparacion', NULL, 'Asignación automática por liberación de técnico', ?)
+        `,
+    [idOrden],
+  );
+
+  return idOrden;
+}
+
+/**
+ * Intenta resolver, en orden, la cola de diagnóstico y luego la de
+ * reparación. Se llama cada vez que un técnico libera cupo (al enviar un
+ * diagnóstico a aprobación, al finalizar una reparación, al cancelar/
+ * entregar una orden, o al desactivarse un técnico). Solo resuelve UNA
+ * orden por llamada (la que corresponda), igual que el comportamiento
+ * original: si liberar ese cupo permite resolver más colas, el próximo
+ * evento de liberación las seguirá resolviendo.
+ */
+async function intentarAsignarColasEspera(connection) {
+  const idOrdenDiagnostico = await asignarPrimeraOrdenPendiente(connection);
+  if (idOrdenDiagnostico)
+    return { tipo: "diagnostico", idOrden: idOrdenDiagnostico };
+
+  const idOrdenReparacion =
+    await asignarPrimeraOrdenPendienteReparacion(connection);
+  if (idOrdenReparacion)
+    return { tipo: "reparacion", idOrden: idOrdenReparacion };
+
+  return null;
+}
 /**
  * Crea una Orden de Servicio y registra el estado inicial en HistorialEstado.
  *
@@ -199,8 +319,16 @@ async function asignarPrimeraOrdenPendiente(connection) {
  * PUT /:id si hace falta antes de que empiece el diagnóstico):
  * si no viene `datos.idTecnico`, se busca el técnico activo con menor
  * `cargaActual` (tecnicoDao.obtenerDisponible). Si ninguno tiene cupo
- * (cargaActual < 3), la orden queda sin técnico (idTecnico = NULL) para
- * que un Admin/Asesor lo asigne manualmente más tarde.
+ * (cargaActual < capacidadMaxima, normalmente 3), la orden queda sin
+ * técnico (idTecnico = NULL) para que un Admin/Asesor lo asigne
+ * manualmente más tarde.
+ *
+ * En cuanto la orden queda con técnico (automático o enviado en
+ * `datos.idTecnico`), arranca directo en "en_diagnostico": ya no existe un
+ * paso intermedio "recibido" — el técnico ve la orden lista para diagnosticar
+ * desde el momento en que se crea. Si no hay técnico disponible, la orden
+ * queda en "pendiente_asignacion" hasta que se libere cupo o se asigne a
+ * mano (ver actualizar()).
  */
 async function crear(datos, idUsuarioCreador) {
   const connection = await pool.getConnection();
@@ -210,7 +338,7 @@ async function crear(datos, idUsuarioCreador) {
 
     const folio = await generarFolio(connection);
 
-    let estadoInicial = "recibido";
+    let estadoInicial = "en_diagnostico";
 
     let idTecnico = datos.idTecnico ?? null;
 
@@ -292,11 +420,18 @@ async function crear(datos, idUsuarioCreador) {
  * BUGFIX: si la orden estaba en "pendiente_asignacion" (sin técnico) y esta
  * llamada le asigna uno (idTecnico pasa de NULL a un valor), la orden debe
  * salir de la cola de espera igual que lo hace la asignación automática:
- * su estado pasa a "recibido" y queda registrado en HistorialEstado con el
- * usuario que hizo la asignación manual. Antes esto no ocurría: el admin
- * podía asignar técnico a mano y la orden se quedaba "fantasma" —con
+ * su estado pasa a "en_diagnostico" y queda registrado en HistorialEstado
+ * con el usuario que hizo la asignación manual. Antes esto no ocurría: el
+ * admin podía asignar técnico a mano y la orden se quedaba "fantasma" —con
  * técnico puesto pero estado "pendiente_asignacion"— rompiendo la cola
- * automática (nunca se contaba como resuelta ni aparecía como recibida).
+ * automática (nunca se contaba como resuelta).
+ *
+ * FALLBACK "técnico mayor" (Admin/Asesor): cuando todos los técnicos reales
+ * están al tope de cupo, se permite asignar manualmente la orden a un
+ * usuario con rol Admin o Asesor (activo) aunque no tenga PerfilTecnico ni
+ * esté sujeto al límite de 3 diagnósticos. Si el usuario elegido SÍ es un
+ * técnico con PerfilTecnico, se le siguen validando estado activo y cupo
+ * normalmente.
  */
 async function actualizar(idOrden, datos, idUsuario = null) {
   const connection = await pool.getConnection();
@@ -325,22 +460,36 @@ async function actualizar(idOrden, datos, idUsuario = null) {
           connection,
         );
 
-      if (!perfilTecnicoNuevo) {
-        throw new Error(
-          "El usuario seleccionado no tiene un perfil de técnico asociado.",
-        );
-      }
-      if (perfilTecnicoNuevo.estadoLaboral !== 1) {
-        throw new Error(
-          "No se puede asignar la orden: el técnico está inactivo.",
-        );
-      }
-      if (
-        perfilTecnicoNuevo.cargaActual >= perfilTecnicoNuevo.capacidadMaxima
-      ) {
-        throw new Error(
-          "No se puede asignar la orden: el técnico ya alcanzó su capacidad máxima.",
-        );
+      if (perfilTecnicoNuevo) {
+        // Es un técnico real (tiene PerfilTecnico): se le aplican las reglas
+        // normales de cupo/estado.
+        if (perfilTecnicoNuevo.estadoLaboral !== 1) {
+          throw new Error(
+            "No se puede asignar la orden: el técnico está inactivo.",
+          );
+        }
+        if (
+          perfilTecnicoNuevo.cargaActual >= perfilTecnicoNuevo.capacidadMaxima
+        ) {
+          throw new Error(
+            "No se puede asignar la orden: el técnico ya alcanzó su capacidad máxima.",
+          );
+        }
+      } else {
+        // No tiene PerfilTecnico: solo se permite si es Admin o Asesor
+        // activo (fallback manual para cuando no hay técnicos con cupo).
+        const usuario = await usuarioDao.obtenerPorId(idTecnicoNuevo);
+        const nombresRoles = (usuario?.roles || []).map((r) => r.nombreRol);
+
+        if (
+          !usuario ||
+          Number(usuario.estado) !== 1 ||
+          !nombresRoles.some((r) => ["Admin", "Asesor"].includes(r))
+        ) {
+          throw new Error(
+            "El usuario seleccionado no es un técnico ni tiene rol de Administrador/Asesor activo para asignación manual.",
+          );
+        }
       }
     }
 
@@ -362,7 +511,9 @@ async function actualizar(idOrden, datos, idUsuario = null) {
       !ordenActual.idTecnico &&
       !!idTecnicoNuevo;
 
-    const estadoNuevo = salioDeColaDeEspera ? "recibido" : ordenActual.estado;
+    const estadoNuevo = salioDeColaDeEspera
+      ? "en_diagnostico"
+      : ordenActual.estado;
 
     await connection.query(
       `
@@ -392,7 +543,7 @@ async function actualizar(idOrden, datos, idUsuario = null) {
         `
                 INSERT INTO HistorialEstado
                 (estadoAnterior, estadoNuevo, usuarioId, motivo, idOrdenServicio)
-                VALUES ('pendiente_asignacion', 'recibido', ?, 'Asignación manual de técnico', ?)
+                VALUES ('pendiente_asignacion', 'en_diagnostico', ?, 'Asignación manual de técnico', ?)
             `,
         [idUsuario, idOrden],
       );
@@ -438,6 +589,16 @@ async function actualizarEstado(idOrden, estadoNuevo, motivo, idUsuario) {
       );
     }
 
+    // "finalizada" ya no se dispara a mano: reparacionDao.finalizar() es
+    // quien la aplica (bloquea la Reparacion, libera al técnico y genera la
+    // Factura automáticamente). Forzarla acá dejaría la orden "finalizada"
+    // sin factura, rompiendo la validación de "entregada" de más abajo.
+    if (estadoNuevo === "finalizada") {
+      throw new Error(
+        "La reparación debe finalizarse desde el módulo de Reparación (POST /api/reparaciones/:idOrden/finalizar), no cambiando el estado manualmente.",
+      );
+    }
+
     // No se puede marcar como entregada sin haber facturado la reparación.
     if (estadoNuevo === "entregada") {
       const [facturas] = await connection.query(
@@ -456,12 +617,24 @@ async function actualizarEstado(idOrden, estadoNuevo, motivo, idUsuario) {
       [estadoNuevo, idOrden],
     );
 
-    // La orden deja de ocupar tiempo del técnico al llegar a un estado
-    // final (entregada = terminó todo el flujo; cancelada = ya no se hace).
-    if (["entregada", "cancelada"].includes(estadoNuevo) && orden.idTecnico) {
+    // La carga del técnico YA se libera antes de llegar a un estado final:
+    // - al enviar el diagnóstico a aprobación (diagnosticoDao.enviarAAprobacion)
+    // - al finalizar la reparación (reparacionDao.finalizar)
+    // Por eso "entregada" (que solo se alcanza desde "finalizada") ya NO
+    // decrementa acá: haría un segundo descuento sobre un técnico que ya
+    // estaba libre. Solo "cancelada" puede sorprender a un técnico
+    // TODAVÍA ocupado (en_diagnostico o en_reparacion); si la orden se
+    // cancela desde un estado donde el técnico ya se había liberado
+    // (pendiente_aprobacion, aprobada, rechazada, pendiente_asignacion_reparacion),
+    // no hay nada que descontar.
+    if (
+      estadoNuevo === "cancelada" &&
+      ESTADOS_CON_TECNICO_OCUPADO.includes(orden.estado) &&
+      orden.idTecnico
+    ) {
       await tecnicoDao.decrementarCargaPorUsuario(orden.idTecnico, connection);
 
-      await asignarPrimeraOrdenPendiente(connection);
+      await intentarAsignarColasEspera(connection);
     }
 
     await connection.query(
@@ -509,11 +682,23 @@ async function eliminarOCancelar(idOrden, idUsuario) {
       await connection.query("DELETE FROM OrdenServicio WHERE idOrden = ?", [
         idOrden,
       ]);
-      if (orden.idTecnico) {
+      if (
+        orden.idTecnico &&
+        ESTADOS_CON_TECNICO_OCUPADO.includes(orden.estado)
+      ) {
         await tecnicoDao.decrementarCargaPorUsuario(
           orden.idTecnico,
           connection,
         );
+
+        // Igual que en el flujo de cancelación (más abajo): al liberar cupo
+        // de un técnico, se intenta asignar automáticamente la primera
+        // orden en espera (diagnóstico o reparación). Antes esto solo pasaba
+        // al cancelar/entregar/reasignar por desactivación; si la orden se
+        // borraba físicamente (sin dependientes todavía) el cupo quedaba
+        // libre en PerfilTecnico pero nadie de la cola de espera se
+        // beneficiaba hasta el siguiente cambio de estado en OTRA orden.
+        await intentarAsignarColasEspera(connection);
       }
       await connection.commit();
       return { eliminada: true, cancelada: false };
@@ -540,13 +725,16 @@ async function eliminarOCancelar(idOrden, idUsuario) {
         [orden.estado, idUsuario, idOrden],
       );
 
-      if (orden.idTecnico) {
+      if (
+        orden.idTecnico &&
+        ESTADOS_CON_TECNICO_OCUPADO.includes(orden.estado)
+      ) {
         await tecnicoDao.decrementarCargaPorUsuario(
           orden.idTecnico,
           connection,
         );
 
-        await asignarPrimeraOrdenPendiente(connection);
+        await intentarAsignarColasEspera(connection);
       }
 
       await connection.commit();
@@ -576,7 +764,11 @@ async function eliminarOCancelar(idOrden, idUsuario) {
  * genera automáticamente una Factura tipo 'diagnostico' por ese valor
  * (el diagnóstico "superficial" es gratis y no genera factura).
  */
-async function registrarAprobacion(idOrden, { aprobado, notas, imagenFirma, metodoCaptura, terminosAceptados }, idUsuario) {
+async function registrarAprobacion(
+  idOrden,
+  { aprobado, notas, imagenFirma, metodoCaptura, terminosAceptados },
+  idUsuario,
+) {
   const connection = await pool.getConnection();
 
   try {
@@ -603,11 +795,16 @@ async function registrarAprobacion(idOrden, { aprobado, notas, imagenFirma, meto
 
     const metodoFinal = metodoCaptura || "remoto_asesor";
     const firmaFinal = imagenFirma || null;
-    if (metodoFinal === "canvas_cliente" && (!firmaFinal || !firmaFinal.startsWith("data:image/"))) {
+    if (
+      metodoFinal === "canvas_cliente" &&
+      (!firmaFinal || !firmaFinal.startsWith("data:image/"))
+    ) {
       throw new Error("La firma capturada no es válida.");
     }
     if (aprobado && !terminosAceptados) {
-      throw new Error("El cliente debe aceptar los términos antes de aprobar el diagnóstico.");
+      throw new Error(
+        "El cliente debe aceptar los términos antes de aprobar el diagnóstico.",
+      );
     }
     const terminosFlag = terminosAceptados ? 1 : 0;
 
@@ -633,6 +830,52 @@ async function registrarAprobacion(idOrden, { aprobado, notas, imagenFirma, meto
         `,
       [orden.estado, estadoNuevo, idUsuario, notas || null, idOrden],
     );
+
+    // NUEVO (módulo de Reparación): en cuanto el cliente aprueba, la orden
+    // arranca directo la etapa de reparación — mismo criterio que "en cuanto
+    // tiene técnico, entra directo a en_diagnostico" al crearse. Se crea el
+    // registro de Reparacion (vacío) y se busca técnico disponible; si hay,
+    // pasa a "en_reparacion", si no, queda en "pendiente_asignacion_reparacion"
+    // hasta que alguno libere cupo (ver asignarPrimeraOrdenPendienteReparacion).
+    if (aprobado) {
+      const reparacionDao = require("./reparacionDao");
+
+      const idTecnicoReparacion =
+        await tecnicoDao.obtenerDisponible(connection);
+      const estadoReparacion = idTecnicoReparacion
+        ? "en_reparacion"
+        : "pendiente_asignacion_reparacion";
+
+      await connection.query(
+        "UPDATE OrdenServicio SET idTecnico = ?, estado = ? WHERE idOrden = ?",
+        [idTecnicoReparacion, estadoReparacion, idOrden],
+      );
+
+      if (idTecnicoReparacion) {
+        await tecnicoDao.incrementarCargaPorUsuario(
+          idTecnicoReparacion,
+          connection,
+        );
+      }
+
+      await reparacionDao.iniciar(idOrden, idTecnicoReparacion, connection);
+
+      await connection.query(
+        `
+            INSERT INTO HistorialEstado
+            (estadoAnterior, estadoNuevo, usuarioId, motivo, idOrdenServicio)
+            VALUES ('aprobada', ?, ?, ?, ?)
+        `,
+        [
+          estadoReparacion,
+          idUsuario,
+          idTecnicoReparacion
+            ? "Asignación automática de técnico para la reparación"
+            : "Sin técnico disponible: en cola de espera para reparación",
+          idOrden,
+        ],
+      );
+    }
 
     let facturaDiagnostico = null;
 
@@ -719,7 +962,7 @@ async function generarNumeroFactura(connection) {
  *   autoasignen la misma orden o que un técnico se pase de cupo por una
  *   condición de carrera.
  * - DEC-007: al asignarse técnico, la orden pasa automáticamente a
- *   "recibido".
+ *   "en_diagnostico".
  * - DEC-005: el movimiento queda registrado en HistorialEstado.
  *
  * idUsuarioTecnico viene siempre del token (req.usuario.idUsuario), nunca
@@ -775,7 +1018,7 @@ async function autoasignar(idOrden, idUsuarioTecnico) {
     }
 
     await connection.query(
-      `UPDATE OrdenServicio SET idTecnico = ?, estado = 'recibido' WHERE idOrden = ?`,
+      `UPDATE OrdenServicio SET idTecnico = ?, estado = 'en_diagnostico' WHERE idOrden = ?`,
       [idUsuarioTecnico, idOrden],
     );
 
@@ -785,7 +1028,7 @@ async function autoasignar(idOrden, idUsuarioTecnico) {
       `
             INSERT INTO HistorialEstado
             (estadoAnterior, estadoNuevo, usuarioId, motivo, idOrdenServicio)
-            VALUES ('pendiente_asignacion', 'recibido', ?, 'Autoasignación del técnico', ?)
+            VALUES ('pendiente_asignacion', 'en_diagnostico', ?, 'Autoasignación del técnico', ?)
         `,
       [idUsuarioTecnico, idOrden],
     );
@@ -794,6 +1037,93 @@ async function autoasignar(idOrden, idUsuarioTecnico) {
 
     await connection.commit();
     return actualizada;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+/**
+ * Autoasignación para REPARACIÓN: mismo mecanismo que autoasignar(), pero
+ * para una orden en "pendiente_asignacion_reparacion" (aprobada por el
+ * cliente, sin técnico libre en el momento). Actualiza también el registro
+ * de Reparacion (idTecnico), que autoasignar() no toca porque no aplica a
+ * la etapa de diagnóstico.
+ */
+async function autoasignarReparacion(idOrden, idUsuarioTecnico) {
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const [ordenRows] = await connection.query(
+      `SELECT idOrden, estado, idTecnico FROM OrdenServicio WHERE idOrden = ? FOR UPDATE`,
+      [idOrden],
+    );
+    const ordenBloqueada = ordenRows[0];
+
+    if (!ordenBloqueada) {
+      throw new Error("La orden no existe.");
+    }
+
+    if (ordenBloqueada.estado !== "pendiente_asignacion_reparacion") {
+      throw new Error(
+        `Solo se puede autoasignar para reparación una orden en "pendiente_asignacion_reparacion" (estado actual: "${ordenBloqueada.estado}").`,
+      );
+    }
+
+    if (ordenBloqueada.idTecnico) {
+      throw new Error("La orden ya tiene un técnico asignado.");
+    }
+
+    const perfil = await tecnicoDao.obtenerPerfilPorUsuarioParaAutoasignar(
+      idUsuarioTecnico,
+      connection,
+    );
+
+    if (!perfil) {
+      throw new Error(
+        "No se encontró un perfil de técnico asociado a este usuario.",
+      );
+    }
+
+    if (Number(perfil.estadoLaboral) !== 1) {
+      throw new Error(
+        "Tu perfil de técnico está inactivo, no puedes autoasignarte órdenes.",
+      );
+    }
+
+    if (perfil.cargaActual >= perfil.capacidadMaxima) {
+      throw new Error(
+        `No tienes cupo disponible (${perfil.cargaActual}/${perfil.capacidadMaxima}).`,
+      );
+    }
+
+    await connection.query(
+      `UPDATE OrdenServicio SET idTecnico = ?, estado = 'en_reparacion' WHERE idOrden = ?`,
+      [idUsuarioTecnico, idOrden],
+    );
+
+    await tecnicoDao.incrementarCargaPorUsuario(idUsuarioTecnico, connection);
+
+    const reparacionDao = require("./reparacionDao");
+    await reparacionDao.asignarTecnico(idOrden, idUsuarioTecnico, connection);
+
+    await connection.query(
+      `
+            INSERT INTO HistorialEstado
+            (estadoAnterior, estadoNuevo, usuarioId, motivo, idOrdenServicio)
+            VALUES ('pendiente_asignacion_reparacion', 'en_reparacion', ?, 'Autoasignación del técnico para reparación', ?)
+        `,
+      [idUsuarioTecnico, idOrden],
+    );
+
+    const actualizadaReparacion = await obtenerPorId(idOrden, connection);
+
+    await connection.commit();
+    return actualizadaReparacion;
   } catch (error) {
     await connection.rollback();
     throw error;
@@ -888,11 +1218,29 @@ async function reasignarOrdenesPorDesactivacion(
         [idTecnicoNuevo, orden.idOrden],
       );
 
-      await tecnicoDao.decrementarCargaPorUsuario(
-        idUsuarioTecnicoSaliente,
-        connection,
-      );
-      await tecnicoDao.incrementarCargaPorUsuario(idTecnicoNuevo, connection);
+      // Solo se mueve cargaActual si el técnico saliente todavía estaba
+      // "ocupado" con esta orden (ver ESTADOS_CON_TECNICO_OCUPADO): si la
+      // orden está en pendiente_aprobacion/aprobada/rechazada/finalizada,
+      // su carga ya se había liberado antes (enviarAAprobacion / finalizar)
+      // y el idTecnico que quedaba ahí era solo de referencia histórica.
+      if (ESTADOS_CON_TECNICO_OCUPADO.includes(orden.estado)) {
+        await tecnicoDao.decrementarCargaPorUsuario(
+          idUsuarioTecnicoSaliente,
+          connection,
+        );
+        await tecnicoDao.incrementarCargaPorUsuario(idTecnicoNuevo, connection);
+      }
+
+      // Si la orden está en reparación, el registro de Reparacion también
+      // debe apuntar al nuevo técnico.
+      if (orden.estado === "en_reparacion") {
+        const reparacionDao = require("./reparacionDao");
+        await reparacionDao.asignarTecnico(
+          orden.idOrden,
+          idTecnicoNuevo,
+          connection,
+        );
+      }
 
       await connection.query(
         `
@@ -935,6 +1283,9 @@ module.exports = {
   registrarAprobacion,
   generarNumeroFactura,
   asignarPrimeraOrdenPendiente,
+  asignarPrimeraOrdenPendienteReparacion,
+  intentarAsignarColasEspera,
   autoasignar,
+  autoasignarReparacion,
   reasignarOrdenesPorDesactivacion,
 };

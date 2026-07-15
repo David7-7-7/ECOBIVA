@@ -10,11 +10,6 @@ export async function obtenerTecnico(id) {
   return data;
 }
 
-export async function crearTecnico(payload) {
-  const { data } = await tecnicosApi.crear(payload);
-  return data;
-}
-
 export async function editarTecnico(id, payload) {
   const { data } = await tecnicosApi.editar(id, payload);
   return data;

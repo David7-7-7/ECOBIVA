@@ -15,6 +15,7 @@ import Tecnicos from "../pages/Tecnicos/Tecnicos";
 import Inventario from "../pages/Inventario/Inventario";
 import Ordenes from "../pages/Ordenes/Ordenes";
 import Diagnosticos from "../pages/Diagnosticos/Diagnosticos";
+import Reparaciones from "../pages/Reparaciones/Reparaciones";
 import Reportes from "../pages/Reportes/Reportes";
 import Configuracion from "../pages/Configuracion/Configuracion";
 import AlertasStock from "../pages/AlertasStock/AlertasStock";
@@ -60,6 +61,10 @@ export default function AppRoutes() {
           <Route path="/diagnosticos" element={<Diagnosticos />} />
 
           <Route path="/diagnosticos/:idOrden" element={<Diagnosticos />} />
+
+          <Route path="/reparaciones" element={<Reparaciones />} />
+
+          <Route path="/reparaciones/:idOrden" element={<Reparaciones />} />
 
           <Route path="/reportes" element={<Reportes />} />
 

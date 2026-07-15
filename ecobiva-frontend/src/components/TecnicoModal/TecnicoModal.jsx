@@ -6,7 +6,7 @@ import Modal from "../Modal/Modal";
 import Input from "../Input/Input";
 import Button from "../Button/Button";
 
-import { crearTecnico, editarTecnico } from "../../services/tecnicoService";
+import { editarTecnico } from "../../services/tecnicoService";
 
 const VACIO = {
   nombre: "",
@@ -96,23 +96,15 @@ export default function TecnicoModal({
     setGuardando(true);
 
     try {
-      if (editando) {
-        await editarTecnico(tecnico.idEmpleado, {
-          nombre: form.nombre.trim(),
-          documento: form.documento.trim(),
-          tarifaHora: Number(form.tarifaHora),
-          especialidad: form.especialidad.trim() || null,
-          capacidadMaxima: Number(form.capacidadMaxima),
-        });
-      } else {
-        await crearTecnico({
-          nombre: form.nombre.trim(),
-          documento: form.documento.trim(),
-          fechaIngreso: form.fechaIngreso,
-          tarifaHora: Number(form.tarifaHora),
-          especialidad: form.especialidad.trim() || null,
-        });
-      }
+      // El alta de técnicos se hace desde Usuarios (rol Técnico) o desde
+      // Empleados > crear-usuario; este modal solo edita técnicos existentes.
+      await editarTecnico(tecnico.idEmpleado, {
+        nombre: form.nombre.trim(),
+        documento: form.documento.trim(),
+        tarifaHora: Number(form.tarifaHora),
+        especialidad: form.especialidad.trim() || null,
+        capacidadMaxima: Number(form.capacidadMaxima),
+      });
 
       onGuardado();
       onClose();

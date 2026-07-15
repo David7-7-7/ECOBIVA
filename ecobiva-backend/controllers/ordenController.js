@@ -94,13 +94,13 @@ async function actualizar(req, res) {
 
     const salioDeColaDeEspera =
       ordenActual.estado === "pendiente_asignacion" &&
-      orden.estado === "recibido";
+      orden.estado === "en_diagnostico";
 
     await registrarAccion(req, {
       accion: "ACTUALIZAR_ORDEN",
       modulo: "ORDENES",
       detalle: salioDeColaDeEspera
-        ? `Se actualizaron datos de la orden ${orden.folio} y se asignó técnico manualmente (pendiente_asignacion → recibido)`
+        ? `Se actualizaron datos de la orden ${orden.folio} y se asignó técnico manualmente (pendiente_asignacion → en_diagnostico)`
         : `Se actualizaron datos de la orden ${orden.folio}`,
     });
 
@@ -149,7 +149,8 @@ async function actualizarEstado(req, res) {
 }
 
 async function registrarAprobacion(req, res) {
-  const { aprobado, notas, imagenFirma, metodoCaptura, terminosAceptados } = req.body;
+  const { aprobado, notas, imagenFirma, metodoCaptura, terminosAceptados } =
+    req.body;
 
   if (typeof aprobado !== "boolean") {
     return res.status(400).json({
@@ -241,12 +242,41 @@ async function autoasignar(req, res) {
     await registrarAccion(req, {
       accion: "AUTOASIGNAR_ORDEN",
       modulo: "ORDENES",
-      detalle: `El técnico se autoasignó la orden ${orden.folio} (pendiente_asignacion → recibido)`,
+      detalle: `El técnico se autoasignó la orden ${orden.folio} (pendiente_asignacion → en_diagnostico)`,
     });
 
     return res.json(orden);
   } catch (error) {
     console.error("Error al autoasignar orden:", error);
+    return res
+      .status(400)
+      .json({ error: error.message || "Error interno del servidor" });
+  }
+}
+
+// Igual que autoasignar(), pero para la cola de reparación: un técnico se
+// asigna a sí mismo una orden en "pendiente_asignacion_reparacion".
+async function autoasignarReparacion(req, res) {
+  try {
+    const ordenActual = await ordenDao.obtenerPorId(req.params.id);
+    if (!ordenActual) {
+      return res.status(404).json({ error: "Orden no encontrada" });
+    }
+
+    const orden = await ordenDao.autoasignarReparacion(
+      req.params.id,
+      req.usuario.idUsuario,
+    );
+
+    await registrarAccion(req, {
+      accion: "AUTOASIGNAR_ORDEN_REPARACION",
+      modulo: "ORDENES",
+      detalle: `El técnico se autoasignó la reparación de la orden ${orden.folio} (pendiente_asignacion_reparacion → en_reparacion)`,
+    });
+
+    return res.json(orden);
+  } catch (error) {
+    console.error("Error al autoasignar orden para reparación:", error);
     return res
       .status(400)
       .json({ error: error.message || "Error interno del servidor" });
@@ -263,4 +293,5 @@ module.exports = {
   registrarAprobacion,
   eliminar,
   autoasignar,
+  autoasignarReparacion,
 };

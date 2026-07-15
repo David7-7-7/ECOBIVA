@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const tecnicoDao = require("./tecnicoDao");
 
 /**
  * Lista todos los empleados.
@@ -285,6 +286,7 @@ async function crearUsuarioEmpleado(
   passwordHash,
   idRol,
   asignadoPor,
+  datosTecnico = {},
 ) {
   const connection = await pool.getConnection();
 
@@ -328,6 +330,20 @@ async function crearUsuarioEmpleado(
             `,
       [usuario.insertId, idRol, asignadoPor],
     );
+
+    // Mismo criterio que usuarioController.crear(): si el rol otorgado es
+    // Técnico, el PerfilTecnico se crea en la misma transacción para que
+    // el empleado quede completo (Empleado + Usuario + PerfilTecnico) y no
+    // vuelva a quedar invisible para la asignación automática de órdenes.
+    const [rolRows] = await connection.query(
+      `SELECT nombreRol FROM Rol WHERE idRol = ?`,
+      [idRol],
+    );
+    const nombreRol = rolRows[0]?.nombreRol || "";
+
+    if (nombreRol.toLowerCase() === "tecnico") {
+      await tecnicoDao.crearPerfilTecnico(idEmpleado, datosTecnico, connection);
+    }
 
     await connection.commit();
 

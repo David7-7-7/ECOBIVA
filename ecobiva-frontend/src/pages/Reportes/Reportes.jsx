@@ -142,6 +142,7 @@ export default function Reportes() {
 
                     <h2>Servicios más realizados</h2>
 
+                    <div className="tableWrapper">
                     <table>
 
                         <thead>
@@ -193,6 +194,7 @@ export default function Reportes() {
                         </tbody>
 
                     </table>
+                    </div>
 
                 </div>
 

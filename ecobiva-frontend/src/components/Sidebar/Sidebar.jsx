@@ -20,6 +20,7 @@ import {
   FaSearch,
   FaExclamationTriangle,
   FaFileContract,
+  FaWrench,
 } from "react-icons/fa";
 
 import { Link, useLocation } from "react-router-dom";
@@ -56,6 +57,12 @@ const MENU = [
     nombre: "Diagnósticos",
     ruta: "/diagnosticos",
     icono: <FaSearch />,
+    roles: ["Admin", "Asesor", "Tecnico"],
+  },
+  {
+    nombre: "Reparaciones",
+    ruta: "/reparaciones",
+    icono: <FaWrench />,
     roles: ["Admin", "Asesor", "Tecnico"],
   },
   {
